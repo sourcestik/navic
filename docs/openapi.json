@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Navic C++ Routing API",
-    "version": "1.0.0",
-    "description": "Shortest-distance routing within the Delhi pilot. Distances are meters, times seconds. Place search is a local OSM gazetteer. ETA has no live traffic. Data \u00a9 OpenStreetMap contributors, ODbL."
+    "version": "2.0.0",
+    "description": "Worldwide OSRM routing with optional custom shortest-distance algorithms on the local Delhi graph. Distances are meters, times seconds. Worldwide Photon search plus a local OSM gazetteer. ETA has no live traffic. Data \u00a9 OpenStreetMap contributors, ODbL."
   },
   "servers": [
     {
@@ -101,9 +101,7 @@
           "algorithm",
           "mode",
           "cached",
-          "visited_nodes",
-          "search_ms",
-          "data_version",
+          "provider",
           "warnings"
         ],
         "properties": {
@@ -199,7 +197,6 @@
                 "required": [
                   "lat",
                   "lon",
-                  "osm_id",
                   "distance_m"
                 ],
                 "properties": {
@@ -228,7 +225,6 @@
                 "required": [
                   "lat",
                   "lon",
-                  "osm_id",
                   "distance_m"
                 ],
                 "properties": {
@@ -262,11 +258,19 @@
               "cycling"
             ]
           },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "navic",
+              "osrm"
+            ]
+          },
           "algorithm": {
             "type": "string",
             "enum": [
               "astar",
-              "dijkstra"
+              "dijkstra",
+              "osrm"
             ]
           },
           "cached": {
@@ -391,7 +395,7 @@
             }
           },
           "422": {
-            "description": "Invalid values or outside coverage",
+            "description": "Invalid coordinates, mode or graph snapping",
             "content": {
               "application/json": {
                 "schema": {
@@ -420,6 +424,26 @@
           },
           "500": {
             "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Unexpected provider response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "External provider unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -530,7 +554,7 @@
             }
           },
           "422": {
-            "description": "Invalid values or outside coverage",
+            "description": "Invalid coordinates, mode or graph snapping",
             "content": {
               "application/json": {
                 "schema": {
@@ -566,13 +590,33 @@
                 }
               }
             }
+          },
+          "502": {
+            "description": "Unexpected provider response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "External provider unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
     },
     "/geocode": {
       "get": {
-        "summary": "Search the bundled place index",
+        "summary": "Worldwide place search or local-only search",
         "responses": {
           "200": {
             "description": "Successful response",
@@ -678,7 +722,7 @@
             }
           },
           "422": {
-            "description": "Invalid values or outside coverage",
+            "description": "Invalid coordinates, mode or graph snapping",
             "content": {
               "application/json": {
                 "schema": {
@@ -714,9 +758,41 @@
                 }
               }
             }
+          },
+          "502": {
+            "description": "Unexpected provider response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "External provider unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         },
         "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "local",
+                "world"
+              ]
+            }
+          },
           {
             "name": "q",
             "in": "query",
@@ -855,7 +931,7 @@
             }
           },
           "422": {
-            "description": "Invalid values or outside coverage",
+            "description": "Invalid coordinates, mode or graph snapping",
             "content": {
               "application/json": {
                 "schema": {
@@ -884,6 +960,26 @@
           },
           "500": {
             "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Unexpected provider response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "External provider unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -980,7 +1076,7 @@
             }
           },
           "422": {
-            "description": "Invalid values or outside coverage",
+            "description": "Invalid coordinates, mode or graph snapping",
             "content": {
               "application/json": {
                 "schema": {
@@ -1009,6 +1105,26 @@
           },
           "500": {
             "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Unexpected provider response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "External provider unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -1048,7 +1164,8 @@
                     "type": "string",
                     "enum": [
                       "dijkstra",
-                      "astar"
+                      "astar",
+                      "world"
                     ],
                     "default": "astar"
                   }

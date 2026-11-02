@@ -30,12 +30,13 @@ def api_factory():
     processes = []
     logs = []
 
-    def start(rate=10000, graph_path=None):
+    def start(rate=10000, graph_path=None, provider=None):
         with socket.socket() as sock:
             sock.bind(("127.0.0.1", 0))
             port = sock.getsockname()[1]
         environment = {**os.environ, "PORT": str(port), "HOST": "127.0.0.1", "RATE_LIMIT_PER_MINUTE": str(rate),
             "ALLOWED_ORIGINS": "http://localhost:5173", "RENDER_EXTERNAL_URL": "https://navic.example"}
+        environment.update(PHOTON_BASE_URL=provider or "http://127.0.0.1:1", OSRM_BASE_URL=provider or "http://127.0.0.1:1")
         if graph_path is not None:
             environment["GRAPH_PATH"] = str(graph_path)
         log = (ROOT / "artifacts" / f"test-server-{port}.log").open("w")
@@ -73,6 +74,6 @@ def api(api_factory):
 
 @pytest.fixture(scope="session")
 def journey(api):
-    first = call(api, "/geocode?q=NSUT")[1]["results"][0]
-    second = call(api, "/geocode?q=Vegas")[1]["results"][0]
+    first = call(api, "/geocode?scope=local&q=NSUT")[1]["results"][0]
+    second = call(api, "/geocode?scope=local&q=Vegas")[1]["results"][0]
     return {"source": {k: first[k] for k in ("lat", "lon")}, "destination": {k: second[k] for k in ("lat", "lon")}}

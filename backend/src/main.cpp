@@ -1,5 +1,6 @@
 #include "navic/graph.hpp"
 #include "httplib.h"
+#include "navic/world.hpp"
 #include <cctype>
 #include <cstdlib>
 #include <deque>
@@ -124,6 +125,9 @@ public:
 
 int main(int argc, char** argv) {
     try {
+        if (curl_global_init(CURL_GLOBAL_DEFAULT) != CURLE_OK) throw std::runtime_error("Cannot initialize HTTPS");
+        const auto photon = env("PHOTON_BASE_URL", "https://photon.komoot.io");
+        const auto router = env("OSRM_BASE_URL", "https://routing.openstreetmap.de");
         const auto started = std::chrono::steady_clock::now();
         const auto graph = navic::Graph::load(env("GRAPH_PATH", "data/graph.ndjson"));
         const auto network = read_file(env("NETWORK_PATH", "data/network.geojson"));
@@ -196,25 +200,25 @@ int main(int argc, char** argv) {
         });
         server.set_exception_handler([](const httplib::Request&, httplib::Response& response, std::exception_ptr exception) {
             try { if (exception) std::rethrow_exception(exception); }
+            catch (const world::Failure& ex) { error(response, ex.status, ex.code, ex.what()); return; }
             catch (const ApiError& ex) { error(response, ex.status, ex.code, ex.what()); return; }
             catch (const Json::parse_error&) { error(response, 400, "INVALID_JSON", "Request body must be valid JSON"); return; }
             catch (const Json::exception&) { error(response, 422, "INVALID_FIELD", "Request contains invalid or missing fields"); return; }
             catch (const std::exception& ex) { std::cerr << "Request failed: " << ex.what() << '\n'; }
             error(response, 500, "INTERNAL_ERROR", "An unexpected error occurred");
         });
-        auto checked = [&](Point p) {
-            if (!graph.contains(p)) throw ApiError(422, "OUTSIDE_COVERAGE", "Point is outside the Delhi pilot coverage boundary");
-        };
         server.Get("/health", [&](const auto&, auto& response) {
-            send(response, {{"status", "ok"}, {"service", "navic-cpp"}, {"version", "1.0.0"},
+            send(response, {{"status", "ok"}, {"service", "navic-cpp"}, {"version", "2.0.0"},
                 {"nodes", graph.nodes.size()}, {"edges", graph.edges.size()}, {"places", graph.places.size()},
                 {"data_version", graph.metadata.at("data_version")}, {"uptime_s",
                 std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count()}});
         });
         server.Get("/coverage", [&](const auto&, auto& response) {
             auto result = graph.metadata;
+            result["local_bbox"] = result["bbox"]; result["bbox"] = {-90,-180,90,180};
+            result["name"] = "Worldwide roads"; result["world_provider"] = "OSRM";
             result["modes"] = {"driving", "walking", "cycling"};
-            result["algorithms"] = {"dijkstra", "astar"}; result["max_snap_m"] = 800;
+            result["algorithms"] = {"world","dijkstra", "astar"}; result["max_snap_m"] = 800;
             result["snap_strategy"] = "nearest nodes on a shared weakly connected component when available";
             send(response, result);
         });
@@ -228,6 +232,13 @@ int main(int argc, char** argv) {
                 if (value < 1 || value > 10 || std::floor(value) != value)
                     throw ApiError(400, "INVALID_QUERY", "limit must be an integer from 1 to 10");
                 limit = static_cast<int>(value);
+            }
+            const bool local_only = request.get_param_value("scope")=="local";
+            Json worldwide = Json::array();
+            bool limited = false;
+            if (!local_only) {
+                try { worldwide = world::places(photon+"/api/?limit="+std::to_string(limit)+"&q="+world::encode(query)); }
+                catch (const world::Failure&) { limited = true; }
             }
             std::vector<std::pair<int, std::size_t>> matches;
             for (std::size_t i = 0; i < graph.places.size(); ++i) {
@@ -248,11 +259,23 @@ int main(int argc, char** argv) {
                 place.erase("aliases"); results.push_back(place);
                 if (results.size() == static_cast<std::size_t>(limit)) break;
             }
-            send(response, {{"results", results}, {"provider", "local_osm_gazetteer"}});
+            if (limited && results.empty()) throw world::Failure(503,"GEOCODER_UNAVAILABLE","Worldwide search is unavailable. Try again or pick the location on the map.");
+            // Preserve the campus alias; give global names precedence over incidental local matches.
+            if (!worldwide.empty() && query!="nsut") {
+                for (const auto& place : results) worldwide.push_back(place);
+                results = std::move(worldwide);
+                while (results.size()>static_cast<size_t>(limit)) results.erase(results.end()-1);
+            }
+            send(response, {{"results", results}, {"limited",limited},{"provider",local_only || limited ? "local_osm_gazetteer":"photon_and_local"}});
         });
         server.Get("/reverse-geocode", [&](const httplib::Request& request, auto& response) {
             Point p = point({{"lat", query_number(request, "lat")}, {"lon", query_number(request, "lon")}});
-            checked(p);
+            if (!graph.contains(p)) {
+                auto found=world::places(photon+"/reverse?limit=1&lat="+std::to_string(p.lat)+"&lon="+std::to_string(p.lon));
+                Json nearest = found.empty() ? Json(nullptr) : found.front();
+                if (!nearest.is_null()) nearest["distance_m"] = navic::haversine(p,{nearest["lat"],nearest["lon"]});
+                send(response, {{"result",nearest},{"approximate",true},{"provider","photon"}}); return;
+            }
             double best = std::numeric_limits<double>::infinity();
             Json nearest = nullptr;
             for (const auto& place : graph.places) {
@@ -271,12 +294,14 @@ int main(int argc, char** argv) {
             if (!body.is_object() || !body.contains("source") || !body.contains("destination"))
                 throw ApiError(422, "MISSING_ENDPOINT", "Provide source and destination objects");
             const Point source = point(body.at("source")), destination = point(body.at("destination"));
-            checked(source); checked(destination);
             const auto mode_name = string_field(body, "mode", "driving");
             const auto algorithm = string_field(body, "algorithm", "astar");
             const auto mode = parse_mode(mode_name);
-            if (algorithm != "astar" && algorithm != "dijkstra")
-                throw ApiError(422, "INVALID_ALGORITHM", "algorithm must be astar or dijkstra");
+            if (algorithm != "astar" && algorithm != "dijkstra" && algorithm != "world")
+                throw ApiError(422, "INVALID_ALGORITHM", "algorithm must be world, astar or dijkstra");
+            if (algorithm=="world" || !graph.contains(source) || !graph.contains(destination)) {
+                send(response,world::route(router,source,destination,mode_name)); return;
+            }
             auto [a, b] = graph.snap_pair(source, destination, mode, 800);
             if (navic::haversine(source, destination) < 0.001) b = a;
             if (a.distance > 800 || b.distance > 800)
@@ -294,7 +319,7 @@ int main(int argc, char** argv) {
                 return Json{{"lat", node.point.lat}, {"lon", node.point.lon}, {"osm_id", node.osm_id}, {"distance_m", snap.distance}};
             };
             result["snapped"] = {{"source", snap_json(a)}, {"destination", snap_json(b)}};
-            result["algorithm"] = algorithm; result["mode"] = mode_name; result["cached"] = cached;
+            result["provider"] = "navic"; result["algorithm"] = algorithm; result["mode"] = mode_name; result["cached"] = cached;
             result["data_version"] = graph.metadata.at("data_version");
             result["warnings"] = {"Distance and ETA exclude the gaps between selected points and snapped road nodes.",
                 "Snapping prefers nearby nodes on a shared road component; selected points may be inside isolated campus or parking areas.",

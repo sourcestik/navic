@@ -1,25 +1,13 @@
-# Navic — a C++ map navigator for Delhi
+# Navic — worldwide map navigator
 
-A B.Tech Electrical Engineering minor project: a real OpenStreetMap graph, custom Dijkstra/A* routing, a C++17 REST API and a React/Leaflet frontend.
+[Open Navic](https://navic-delhi.onrender.com/) · [Public API](https://navic-delhi.onrender.com/docs) · [Health](https://navic-delhi.onrender.com/health)
 
-**Status:** built and tested locally. Public GitHub/Render/Netlify deployment is prepared but not yet verified. Do not submit a localhost URL as the deployed API deliverable.
+Plan driving, walking and cycling routes between connected roads worldwide. Choose an origin and destination by name or on the map. Browser location is requested on startup. If GPS is unavailable, Navic estimates the visitor’s area using their IP address. You can retry GPS or replace either pin manually.
 
-![Navic route planner](docs/screenshots/navic-route.jpg)
-
-## Features
-- Search and keyboard autocomplete from a bundled OSM place index.
-- Source/destination selection by search, map click or browser geolocation.
-- Driving, walking and cycling with mode-specific access/direction masks.
-- Dijkstra and A* implemented from scratch; haversine distance heuristic.
-- Component-aware nearest-node snapping, GeoJSON route, distance, static ETA and basic maneuvers.
-- Local reverse lookup, coverage endpoint, health checks, OpenAPI and Swagger UI.
-- Bounded worker pool/cache/rate limiter, input validation and CORS allowlist.
-- Offline local demonstration using bundled road geometry instead of downloaded tiles.
-
-**Coverage:** 28.50–28.70° N and 76.98–77.25° E, Dwarka to parts of central Delhi. **Not full Delhi NCR.** The bundled snapshot has 309,697 nodes, 708,631 directed edges and 19,907 named places. Data timestamp: 2026-11-01T19:03:08Z.
+The default browser route uses OSRM. The NSUT sample journeys demonstrate the original C++ A* and Dijkstra algorithms on a bundled Delhi road network. The world map and global search have no Delhi boundary. See [worldwide routing and location](docs/worldwide.md) for providers, behavior, configuration and limitations. The original Delhi report, benchmarks and viva guide document the local engine.
 
 ## Requirements
-For backend: a C++17 compiler (`clang++` or `g++`), POSIX/macOS/Linux environment and Python 3.9+ for data unpacking/tests. CMake is optional; the supplied build script does not require it. For frontend builds: Node 22.12+ (Node 24 used here), and pnpm 11.25.0. No paid key is needed. Docker is an alternative build/deployment path.
+For backend: libcurl development headers (on Debian/Ubuntu install `libcurl4-openssl-dev`), a C++17 compiler (`clang++` or `g++`), POSIX/macOS/Linux environment and Python 3.9+ for data unpacking/tests. CMake is optional; the supplied build script does not require it. For frontend builds: Node 22.12+ (Node 24 used here), and pnpm 11.25.0. No paid key is needed. Docker is an alternative build/deployment path.
 
 On this Mac, clang, Python and Git were present. The frontend was built using the bundled Node runtime; there is no system-wide Node installation. Install Node from its official distribution if you want normal `node`, `npm` and `pnpm` commands in your terminal. The optional local convenience command below locates the already-present runtime as well.
 
@@ -83,7 +71,7 @@ sh scripts/build.sh
 python3 scripts/benchmark.py
 python3 scripts/smoke_test.py http://127.0.0.1:8080
 ```
-The benchmark/smoke test need a running API; pytest starts and stops its own isolated servers. The C++ suite performs 16,529 assertions, including seeded comparison with an independent Floyd–Warshall oracle. The Python suite contains 45 integration/preparation tests. Results and limitations are in `docs/05-testing.md` and the `artifacts` directory. A sanitizer run and physical-device/geolocation tests should only be claimed if separately recorded.
+The benchmark/smoke test need a running API; pytest starts and stops its own isolated servers. The C++ suite performs 16,529 assertions, including seeded comparison with an independent Floyd–Warshall oracle. The Python suite contains 52 integration/preparation tests. The six location tests run with Node’s test runner. Results and limitations are in `docs/05-testing.md` and the `artifacts` directory. A sanitizer run and physical-device/geolocation tests should only be claimed if separately recorded.
 
 ## Rebuild OSM data
 The committed gzip snapshot is sufficient for running the project; no Overpass download is needed at startup. To deliberately update the bounded extract:
@@ -120,15 +108,15 @@ artifacts/                       Recorded test and benchmark evidence
 Dockerfile                       Multi-stage frontend/C++ runtime build
 render.yaml                      Free Render web service blueprint
 netlify.toml                     Separate static frontend deployment
-.github/workflows/ci.yml          Linux build/test workflow (execution requires push)
+.github/workflows/ci.yml          Linux build/test workflow
 ```
 `docs/file-tree.txt` in the source bundle gives the full delivered file inventory.
 
 ## Study and defend
 Read the [13-page project report](output/pdf/navic-minor-project-report.pdf), [viva guide](docs/viva-guide.md), [60 questions and answers](docs/viva-questions.md), [demo script](docs/demo-script.md) and [one-page revision sheet](output/pdf/navic-viva-cheat-sheet.pdf). See [Phase 7](docs/07-documentation.md) to regenerate the PDFs.
-Start with `docs/viva-guide.md`: two-/five-minute walkthroughs, block-by-block source explanations, concept primers, choices and honest weaknesses. Then use `docs/viva-questions.md` (60 answers and follow-ups), `docs/demo-script.md` and `docs/cheat-sheet.md`. An interactive mock viva follows completion of the build/deployment: one question at a time, grading and feedback.
+Read `docs/worldwide.md` alongside the original Delhi material. Start with `docs/viva-guide.md`: two-/five-minute walkthroughs, block-by-block source explanations, concept primers, choices and honest weaknesses. Then use `docs/viva-questions.md` (60 answers and follow-ups), `docs/demo-script.md` and `docs/cheat-sheet.md`. An interactive mock viva follows completion of the build/deployment: one question at a time, grading and feedback.
 
 ## Limitations and attribution
-The app optimizes road distance, not travel time. ETA has no live traffic or signal delay. The routing profile does not implement turn-restriction relations, barriers, conditional rules or all regional access defaults. Node snapping can select a road across an inaccessible gap; shared weak connectivity is necessary but not sufficient for a directed route. Basic instructions are not lane/roundabout-exit guidance. Local search is not a complete address geocoder. This is an educational prototype.
+The Delhi demo optimizes road distance. OSRM uses its configured mode profile. ETA has no live traffic or signal delay. The routing profile does not implement turn-restriction relations, barriers, conditional rules or all regional access defaults. Node snapping can select a road across an inaccessible gap; shared weak connectivity is necessary but not sufficient for a directed route. Basic instructions are not lane/roundabout-exit guidance. Local search is not a complete address geocoder. This is an educational prototype.
 
 Map/database content is © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), under ODbL. Derived data follows that license, separately from project code. Follow [OSM tile policy](https://operations.osmfoundation.org/policies/tiles/) and [Nominatim policy](https://operations.osmfoundation.org/policies/nominatim/); the public Nominatim service is not used. Third-party code retains its notices; see `THIRD_PARTY_NOTICES.md`. AI assistance should be acknowledged according to the institution's academic policy.

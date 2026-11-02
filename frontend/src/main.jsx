@@ -5,36 +5,35 @@ import MapView from './MapView';
 import { API_BASE, request, distance, duration } from './api';
 import { Icon } from './icons';
 import './styles.css';
+import { locateOrigin, ipEstimate } from './location';
 
 function App() {
   const [source, setSource] = useState(null), [destination, setDestination] = useState(null);
-  const [mode, setMode] = useState('driving'), [algorithm, setAlgorithm] = useState('astar');
-  const [coverage, setCoverage] = useState(null), [health, setHealth] = useState(null);
+  const [mode, setMode] = useState('driving'), [algorithm, setAlgorithm] = useState('world');
+  const [health, setHealth] = useState(null);
   const [route, setRoute] = useState(null), [busy, setBusy] = useState(false);
   const [error, setError] = useState(''), [status, setStatus] = useState('Connecting to the routing API…');
   const [pickTarget, setPickTarget] = useState('source'), [offline, setOffline] = useState(false);
-  const [info, setInfo] = useState(false), [geoBusy, setGeoBusy] = useState(false);
+  const [info, setInfo] = useState(false), [locationState, setLocationState] = useState('idle');
   const [exampleBusy, setExampleBusy] = useState(false);
+  const locationAbort = useRef(null);
+  const cancelLocation = () => { locationAbort.current?.abort(); setLocationState('idle'); };
   const routeAbort = useRef(null), revision = useRef(0);
   const initAbort = useRef(null), modal = useRef(null);
   const initialize = async () => {
     initAbort.current?.abort(); const controller = new AbortController(); initAbort.current = controller;
     setStatus('Connecting… Free hosting may take a minute to wake up.');
     try {
-      const [h, c] = await Promise.all([request('/health', { signal: controller.signal }), request('/coverage', { signal: controller.signal })]);
+      const h = await request('/health', { signal: controller.signal });
       if (controller.signal.aborted) return;
-      setHealth(h); setCoverage(c); setStatus('Routing engine ready');
+      setHealth(h); setStatus('Routing engine ready');
     } catch (err) { if (!controller.signal.aborted) setStatus(err.message); }
   };
   useEffect(() => { initialize(); return () => { initAbort.current?.abort(); routeAbort.current?.abort(); }; }, []);
   const invalidate = () => { revision.current++; routeAbort.current?.abort(); setBusy(false); setRoute(null); setError(''); };
-  const updateSource = value => { invalidate(); setSource(value); };
+  const updateSource = value => { cancelLocation(); invalidate(); setSource(value); };
   const updateDestination = value => { invalidate(); setDestination(value); };
   const pick = point => {
-    if (coverage) {
-      const [s, w, n, e] = coverage.bbox;
-      if (point.lat < s || point.lat > n || point.lon < w || point.lon > e) { setError('Choose a point inside the dotted Delhi pilot boundary.'); return; }
-    }
     if (pickTarget === 'source') { updateSource(point); setPickTarget('destination'); }
     else updateDestination(point);
   };
@@ -49,26 +48,31 @@ function App() {
     } catch (err) { if (!controller.signal.aborted && current === revision.current) setError(err.message); }
     finally { if (current === revision.current) setBusy(false); }
   };
-  const useLocation = () => {
-    if (!navigator.geolocation) { setError('This browser does not support geolocation. Choose a point on the map.'); return; }
-    setGeoBusy(true); setError('');
-    navigator.geolocation.getCurrentPosition(position => {
-      setGeoBusy(false);
-      const p = { lat: position.coords.latitude, lon: position.coords.longitude, name: 'My location' };
-      if (coverage) {
-        const [s, w, n, e] = coverage.bbox;
-        if (p.lat < s || p.lat > n || p.lon < w || p.lon > e) { setError('Your location is outside this Delhi pilot. Search for a place or choose one on the map.'); return; }
-      }
-      updateSource(p); setPickTarget('destination');
-    }, () => { setGeoBusy(false); setError('Location access was unavailable. Allow it in your browser or select a point on the map.'); }, { timeout: 15000, maximumAge: 60000 });
-  };
-  const example = async (to = 'Vegas') => {
-    invalidate(); setExampleBusy(true); const current = revision.current;
+  const useLocation = async () => {
+    locationAbort.current?.abort();
+    const controller = new AbortController();
+    locationAbort.current = controller;
     try {
-      const [a, b] = await Promise.all([request('/geocode?q=NSUT'), request(`/geocode?q=${encodeURIComponent(to)}`)]);
+      const place = await locateOrigin({geolocation:navigator.geolocation, fetchEstimate:ipEstimate,
+        onStage:setLocationState, signal:controller.signal});
+      if (controller.signal.aborted) return;
+      invalidate(); setSource(place); setLocationState(place.method+'-ready'); setPickTarget('destination');
+    } catch {
+      if (!controller.signal.aborted) setLocationState('unavailable');
+    }
+  };
+  useEffect(() => { useLocation(); return () => locationAbort.current?.abort(); }, []);
+  const locationMessage = {gps:'Finding your GPS location…', ip:'Estimating your area from your IP…',
+    'ip-ready':'Approximate origin from your IP. You can move the pin.', 'gps-ready':'Origin set from device location.',
+    unavailable:'Location unavailable. Search for a place or select a point on the map.'}[locationState];
+  const geoBusy = locationState==='gps' || locationState==='ip';
+  const example = async (to = 'Vegas') => {
+    cancelLocation(); invalidate(); setExampleBusy(true); const current = revision.current;
+    try {
+      const [a, b] = await Promise.all([request('/geocode?q=NSUT&scope=local'), request(`/geocode?scope=local&q=${encodeURIComponent(to)}`)]);
       if (current !== revision.current) return;
       if (!a.results.length || !b.results.length) throw new Error('This example is unavailable in the current extract. Search or choose points on the map.');
-      setSource(a.results[0]); setDestination(b.results[0]); setPickTarget('destination');
+      setAlgorithm('astar'); setSource(a.results[0]); setDestination(b.results[0]); setPickTarget('destination');
     } catch (err) { if (current === revision.current) setError(err.message); }
     finally { setExampleBusy(false); }
   };
@@ -89,17 +93,19 @@ function App() {
         <div className="planner-content">
           <div className="eyebrow"><span className="short-line"/> YOUR CITY, CONNECTED</div>
           <h1>Every journey<br/> starts <em>somewhere.</em></h1>
-          <p className="intro">Find your way through Delhi, one turn at a time.</p>
+          <p className="intro">Find a road route anywhere in the world.</p>
           <div className="mode-tabs" role="group" aria-label="Travel mode">{[['driving', 'car', 'Drive'], ['walking', 'walk', 'Walk'], ['cycling', 'bike', 'Cycle']].map(([value, icon, label]) =>
             <button key={value} className={mode === value ? 'selected' : ''} aria-pressed={mode === value} onClick={() => { invalidate(); setMode(value); }}><Icon name={icon}/>{label}</button>)}</div>
           <form onSubmit={compute}>
             <div className="endpoints">
-              <SearchBox label="STARTING POINT" value={source} onChange={updateSource} onFocus={() => setPickTarget('source')}/>
-              <div className="endpoint-connector"/><button type="button" className="swap-button" aria-label="Swap source and destination" onClick={() => { invalidate(); setSource(destination); setDestination(source); }}><Icon name="swap" size={17}/></button>
+              <SearchBox label="STARTING POINT" value={source} onChange={updateSource} onEdit={cancelLocation} onFocus={() => setPickTarget('source')}/>
+              <div className="origin-location"><button type="button" className="location-button" onClick={useLocation} disabled={geoBusy}><Icon name="locate" size={16}/>{geoBusy ? 'Locating…' : ['ip-ready','unavailable'].includes(locationState) ? 'Retry GPS' : 'Use my current location'}</button>
+                <small role="status">{locationMessage}</small></div>
+              <div className="endpoint-connector"/><button type="button" className="swap-button" aria-label="Swap source and destination" onClick={() => { cancelLocation(); invalidate(); setSource(destination); setDestination(source); }}><Icon name="swap" size={17}/></button>
               <SearchBox label="DESTINATION" value={destination} onChange={updateDestination} onFocus={() => setPickTarget('destination')} destination/>
             </div>
-            <button type="button" className="location-button" onClick={useLocation} disabled={geoBusy}><Icon name="locate" size={16}/>{geoBusy ? 'Finding your location…' : 'Use my current location'}</button>
-            <div className="algorithm-row"><label htmlFor="algorithm">Routing algorithm <span title="Both find shortest distance; A* uses a geographic heuristic.">ⓘ</span></label><select id="algorithm" value={algorithm} onChange={event => { invalidate(); setAlgorithm(event.target.value); }}><option value="astar">A* search</option><option value="dijkstra">Dijkstra</option></select></div>
+
+            <div className="algorithm-row"><label htmlFor="algorithm">Routing algorithm <span title="Local algorithms use the Delhi snapshot. Other locations use worldwide routing.">ⓘ</span></label><select id="algorithm" value={algorithm} onChange={event => { invalidate(); setAlgorithm(event.target.value); }}><option value="world">Worldwide routing</option><option value="astar">A* · Delhi demo</option><option value="dijkstra">Dijkstra · Delhi demo</option></select></div>
             <button className="route-button" disabled={!source || !destination || busy || !health} type="submit"><span>{busy ? 'Finding your way…' : 'Find my route'}</span>{busy ? <span className="spinner"/> : <Icon name="arrow" size={21}/>}</button>
           </form>
           {error && <div className="error-message" role="alert"><Icon name="info" size={18}/><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><Icon name="close" size={16}/></button></div>}
@@ -107,28 +113,28 @@ function App() {
           {route ? <section className="route-result" aria-live="polite">
             <div className="result-heading"><span><Icon name="check" size={16}/> YOUR ROUTE IS READY</span><span className="result-mode">{mode}</span></div>
             <div className="route-metrics"><div><strong>{duration(route.duration_s)}</strong><span>Estimated travel time</span></div><div><strong>{distance(route.distance_m)}</strong><span>Road distance</span></div></div>
-            <p className="route-caveat">Shortest distance · no live traffic<br/>Snapping gaps: {distance(route.snapped.source.distance_m)} at start, {distance(route.snapped.destination.distance_m)} at end.</p>
+            <p className="route-caveat">{route.provider==='osrm' ? 'OSRM road route' : 'Shortest distance on the local graph'} · no live traffic<br/>Snapping gaps: {distance(route.snapped.source.distance_m)} at start, {distance(route.snapped.destination.distance_m)} at end.</p>
             <details className="directions" open><summary>Turn by turn <span>{route.steps.length} steps</span></summary><ol>{route.steps.map((step, index) => <li key={index}><span className="step-icon"><Icon name={step.maneuver === 'arrive' ? 'flag' : step.maneuver === 'left' ? 'left' : step.maneuver === 'right' ? 'right' : 'straight'} size={19}/></span><div><p>{step.instruction}</p>{step.distance_m > 0 && <small>{distance(step.distance_m)}</small>}</div></li>)}</ol></details>
-            <details className="engine-details"><summary>Under the hood</summary><p>{route.cached ? 'Route served from the in-memory cache; no new search performed.' : `${route.visited_nodes.toLocaleString()} nodes visited in ${route.search_ms.toFixed(2)} ms (search only).`}</p><p>{algorithm === 'astar' ? 'A* with a haversine distance heuristic.' : 'Dijkstra with nonnegative distance weights.'}</p><ul>{route.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul></details>
+            <details className="engine-details"><summary>Under the hood</summary><p>{route.provider==='osrm' ? 'Worldwide directions by OSRM / FOSSGIS.' : route.cached ? 'Route served from the in-memory cache; no new search performed.' : `${route.visited_nodes.toLocaleString()} nodes visited in ${route.search_ms.toFixed(2)} ms (search only).`}</p><p>{route.provider==='osrm' ? 'OSRM chose the route for the selected travel mode.' : algorithm === 'astar' ? 'A* with a haversine distance heuristic.' : 'Dijkstra with nonnegative distance weights.'}</p><ul>{route.warnings.map(warning => <li key={warning}>{warning}</li>)}</ul></details>
           </section> : <section className="explore">
             <div className="section-heading"><h2>A good place to start</h2><span>TRY A JOURNEY</span></div>
             <button className="journey-card" disabled={exampleBusy || !health} onClick={() => example()}><span className="journey-art"><Icon name="route" size={28}/></span><span><strong>From campus to a coffee</strong><small>NSUT → Vegas Mall, Dwarka</small></span><Icon name="arrow" size={17}/></button>
             <button className="journey-card" disabled={exampleBusy || !health} onClick={() => example('India Gate')}><span className="journey-art warm"><Icon name="compass" size={28}/></span><span><strong>Take the city route</strong><small>NSUT → India Gate</small></span><Icon name="arrow" size={17}/></button>
-            <div className="map-tip"><Icon name="pin" size={17}/><p>Have a spot in mind?<br/><strong>Click anywhere inside the map boundary.</strong></p></div>
+            <div className="map-tip"><Icon name="pin" size={17}/><p>Have a spot in mind?<br/><strong>Choose your endpoints directly on the map.</strong></p></div>
           </section>}
         </div>
-        <footer className="sidebar-footer"><span className={`status-dot ${health ? '' : 'pending'}`}/><span>{health ? 'Powered by your own C++ routing engine' : 'Waiting for the routing engine'}</span><button onClick={() => setInfo(true)} aria-label="About this project"><Icon name="info" size={16}/></button></footer>
+        <footer className="sidebar-footer"><span className={`status-dot ${health ? '' : 'pending'}`}/><span>{health ? 'Connected to Navic routing' : 'Waiting for the routing engine'}</span><button onClick={() => setInfo(true)} aria-label="About this project"><Icon name="info" size={16}/></button></footer>
       </aside>
-      <MapView coverage={coverage} source={source} destination={destination} route={route} onPick={pick} pickTarget={pickTarget} offline={offline} setOffline={setOffline}/>
+      <MapView source={source} destination={destination} route={route} onPick={pick} pickTarget={pickTarget} offline={offline} setOffline={setOffline}/>
     </main>
     <dialog ref={modal} className="about-dialog" onCancel={() => setInfo(false)} onClick={event => { if (event.target === modal.current) setInfo(false); }}>
       <button className="dialog-close icon-button" onClick={() => setInfo(false)} aria-label="Close project information"><Icon name="close"/></button>
       <div className="eyebrow">BEHIND THE ROUTE</div><h2>Open roads.<br/><em>Understandable algorithms.</em></h2>
       <p>Navic is a minor-project navigator built with a C++17 API, React and Leaflet. Dijkstra and A* are implemented from scratch on real OpenStreetMap data.</p>
       <div className="about-stats"><div><strong>{health?.nodes.toLocaleString() || '—'}</strong><span>graph nodes</span></div><div><strong>{health?.edges.toLocaleString() || '—'}</strong><span>directed edges</span></div></div>
-      <p><strong>Coverage:</strong> Dwarka to parts of central Delhi. This is a bounded Delhi NCR pilot, not full NCR coverage. Search uses a bundled place index; reverse lookup is approximate.</p>
-      <p><strong>Be aware:</strong> routes minimize road distance. ETA excludes traffic, signals and snapping gaps. Basic instructions do not account for turn restrictions, barriers or conditional access. This is an educational prototype.</p>
-      <p><strong>Offline demo:</strong> run the local API and select “Road map” to switch to bundled road geometry. Online tiles are never bulk-downloaded.</p>
+      <p><strong>Coverage:</strong> Worldwide place search by Photon and routes by OSRM / FOSSGIS. The Delhi demos also work with a bundled graph and place index.</p>
+      <p><strong>Be aware:</strong> local demo routes minimize road distance. ETA excludes traffic, signals and snapping gaps. Basic instructions do not account for turn restrictions, barriers or conditional access. This is an educational prototype.</p>
+      <p><strong>Offline demo:</strong> run the local API and select “Road map” to switch to bundled road geometry. Offline road geometry covers Delhi. GPS is requested first. If unavailable, FreeIPAPI estimates your area from your IP; search queries go to Photon and worldwide route endpoints go to OSRM.</p>
       <a className="docs-link" href={`${API_BASE}/docs`} target="_blank" rel="noreferrer">Explore the API documentation <Icon name="arrow" size={17}/></a>
       <small>Map data © OpenStreetMap contributors, ODbL. <a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noreferrer">Report a map issue</a>.</small>
     </dialog>

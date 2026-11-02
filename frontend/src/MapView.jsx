@@ -5,15 +5,15 @@ import { request } from './api';
 import { Icon } from './icons';
 
 const tileUrl = import.meta.env.VITE_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-export default function MapView({ coverage, source, destination, route, onPick, pickTarget, offline, setOffline }) {
+export default function MapView({ source, destination, route, onPick, pickTarget, offline, setOffline }) {
   const container = useRef(null), map = useRef(null), tile = useRef(null);
-  const routeLayers = useRef(null), markers = useRef(null), boundary = useRef(null), roads = useRef(null);
+  const routeLayers = useRef(null), markers = useRef(null), roads = useRef(null);
   const pickRef = useRef(onPick);
   const fittedRoute = useRef(null);
   const [mapError, setMapError] = useState('');
   useEffect(() => { pickRef.current = onPick; }, [onPick]);
   useEffect(() => {
-    const instance = L.map(container.current, { zoomControl: false, preferCanvas: true, minZoom: 10 }).setView([28.60, 77.10], 12);
+    const instance = L.map(container.current, { zoomControl: false, preferCanvas: true, minZoom: 2, worldCopyJump:true }).setView([20, 0], 2);
     map.current = instance;
     tile.current = L.tileLayer(tileUrl, { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(instance);
     tile.current.on('tileerror', () => setMapError('Map tiles unavailable. Use the offline road map.'));
@@ -21,8 +21,8 @@ export default function MapView({ coverage, source, destination, route, onPick, 
     markers.current = L.layerGroup().addTo(instance);
     L.control.zoom({ position: 'bottomright' }).addTo(instance);
     L.control.scale({ position: 'bottomleft', imperial: false }).addTo(instance);
-    instance.on('click', event => pickRef.current({ lat: event.latlng.lat, lon: event.latlng.lng,
-      name: `${event.latlng.lat.toFixed(5)}, ${event.latlng.lng.toFixed(5)}` }));
+    instance.on('click', event => pickRef.current({ lat: event.latlng.lat, lon: event.latlng.wrap().lng,
+      name: `${event.latlng.lat.toFixed(5)}, ${event.latlng.wrap().lng.toFixed(5)}` }));
     const observer = new ResizeObserver(() => {
       instance.invalidateSize({ pan: false });
       if (fittedRoute.current) frameRoute(instance, fittedRoute.current);
@@ -31,12 +31,8 @@ export default function MapView({ coverage, source, destination, route, onPick, 
     return () => { observer.disconnect(); instance.remove(); map.current = null; };
   }, []);
   useEffect(() => {
-    if (!coverage || !map.current) return;
-    const [s, w, n, e] = coverage.bbox;
-    boundary.current?.remove();
-    boundary.current = L.rectangle([[s, w], [n, e]], { color: '#527668', weight: 1.5, dashArray: '6 7', fillOpacity: 0, interactive: false }).addTo(map.current);
-    map.current.setMaxBounds([[s - .09, w - .09], [n + .09, e + .09]]);
-  }, [coverage]);
+    if (source && map.current) map.current.setView([source.lat, source.lon], source.method==='ip' ? 10 : 13);
+  }, [source]);
   useEffect(() => {
     if (!map.current) return;
     markers.current.clearLayers();
@@ -81,12 +77,12 @@ export default function MapView({ coverage, source, destination, route, onPick, 
   }, [offline]);
   return <section id="route-map" tabIndex={-1} className="map-area" aria-label="Interactive route map">
     <div ref={container} className="map-canvas" />
-    <div className="map-topline"><span className="map-location"><span className="live-dot"/> DELHI NCR <span className="map-separator">/</span> PILOT AREA</span>
-      <button className={`map-style ${offline ? 'selected' : ''}`} onClick={() => setOffline(!offline)} aria-pressed={offline}><Icon name="layers" size={17}/>{offline ? 'Offline roads' : 'Road map'}</button>
+    <div className="map-topline"><span className="map-location"><span className="live-dot"/> WORLD MAP</span>
+      <button className={`map-style ${offline ? 'selected' : ''}`} onClick={() => setOffline(!offline)} aria-pressed={offline}><Icon name="layers" size={17}/>{offline ? 'Delhi offline roads' : 'Online map'}</button>
     </div>
     {!route && <div className="map-instruction"><Icon name="pin" size={16}/> Click the map to set your <strong>{pickTarget}</strong></div>}
     {mapError && <div className="map-error" role="status">{mapError} {!offline && <button onClick={() => setOffline(true)}>Use offline roads</button>}</div>}
-    <div className="map-caption"><Icon name="compass" size={15}/><span>{offline ? 'Local OSM geometry · no map-tile connection needed' : 'Dwarka → Central Delhi · routes stay inside the dotted boundary'}</span></div>
+    <div className="map-caption"><Icon name="compass" size={15}/><span>{offline ? 'Delhi offline roads · no map-tile connection needed' : 'Worldwide routing · © OpenStreetMap contributors'}</span></div>
     {offline && <div className="offline-attribution">© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · ODbL</div>}
   </section>;
 }

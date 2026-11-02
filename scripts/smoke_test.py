@@ -28,8 +28,8 @@ def call(path, data=None):
 
 health = call("/health")
 assert health["status"] == "ok"
-source = call("/geocode?q=NSUT")["results"][0]
-destination = call("/geocode?q=Vegas")["results"][0]
+source = call("/geocode?scope=local&q=NSUT")["results"][0]
+destination = call("/geocode?scope=local&q=Vegas")["results"][0]
 results = []
 for mode in ("driving", "walking", "cycling"):
     body = {"source": {k: source[k] for k in ("lat", "lon")}, "destination": {k: destination[k] for k in ("lat", "lon")}, "mode": mode, "algorithm": "astar"}

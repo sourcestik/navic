@@ -2,7 +2,7 @@ import React, { useEffect, useId, useRef, useState } from 'react';
 import { request } from './api';
 import { Icon } from './icons';
 
-export default function SearchBox({ label, value, onChange, onFocus, destination }) {
+export default function SearchBox({ label, value, onChange, onFocus, onEdit, destination }) {
   const id = useId();
   const [text, setText] = useState(value?.name || '');
   const [results, setResults] = useState([]);
@@ -31,7 +31,7 @@ export default function SearchBox({ label, value, onChange, onFocus, destination
         setResults(data.results); setActive(-1);
       } catch (err) { if (!controller.signal.aborted) setError(err.message); }
       finally { if (!controller.signal.aborted) setBusy(false); }
-    }, 300);
+    }, 500);
     return () => { clearTimeout(timer); controller.abort(); };
   }, [text, open, value]);
   const choose = place => { onChange(place); setText(place.name); setOpen(false); setResults([]); };
@@ -43,7 +43,7 @@ export default function SearchBox({ label, value, onChange, onFocus, destination
         aria-controls={`${id}-results`} aria-activedescendant={active >= 0 ? `${id}-${active}` : undefined}
         autoComplete="off" placeholder={destination ? 'Where are you heading?' : 'Choose a starting point'} value={text}
         onFocus={() => { setOpen(true); onFocus(); }}
-        onChange={event => { const next = event.target.value; if (value) { editing.current = true; onChange(null); } setText(next); setOpen(true); setActive(-1); }}
+        onChange={event => { onEdit?.(); const next = event.target.value; if (value) { editing.current = true; onChange(null); } setText(next); setOpen(true); setActive(-1); }}
         onKeyDown={event => {
           if (event.key === 'Escape') setOpen(false);
           if (event.key === 'ArrowDown' && results.length) { event.preventDefault(); setActive(i => Math.min(i + 1, results.length - 1)); }
@@ -53,10 +53,10 @@ export default function SearchBox({ label, value, onChange, onFocus, destination
     </div>
     {value && <button className="clear-input icon-button" type="button" aria-label={`Clear ${label.toLowerCase()}`} onClick={() => { onChange(null); setText(''); }}><Icon name="close" size={15}/></button>}
     {open && text.trim().length >= 2 && value?.name !== text && <div className="suggestions" id={`${id}-results`} role="listbox" aria-label={`${label} suggestions`}>
-      {busy ? <p>Searching Delhi places…</p> : error ? <p role="alert">{error}</p> : results.length === 0 ? <p>No match yet. Try a landmark, road, or click the map.</p> : results.map((place, i) =>
+      {busy ? <p>Searching worldwide…</p> : error ? <p role="alert">{error}</p> : results.length === 0 ? <p>No match yet. Try a landmark, road, or click the map.</p> : results.map((place, i) =>
         <button key={place.id} id={`${id}-${i}`} role="option" aria-selected={active === i} type="button"
           className={active === i ? 'active' : ''} onClick={() => choose(place)}>
-          <Icon name="pin" size={18}/><span><strong>{place.name}</strong><small>{place.kind.replaceAll('_', ' ')} · Delhi pilot</small></span>
+          <Icon name="pin" size={18}/><span><strong>{place.name}</strong><small>{place.kind.replaceAll('_', ' ')} · {place.context || (place.context === '' ? 'OpenStreetMap' : 'Delhi')}</small></span>
         </button>)}
     </div>}
   </div>;

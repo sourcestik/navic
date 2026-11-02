@@ -13,6 +13,7 @@ artifacts/local-smoke-test.json
 artifacts/pytest-results.xml
 artifacts/resource-check.json
 backend/include/navic/graph.hpp
+backend/include/navic/world.hpp
 backend/src/main.cpp
 backend/tests/test_graph.cpp
 backend/vendor/LICENSE.httplib
@@ -42,6 +43,7 @@ docs/screenshots/navic-route.jpg
 docs/swagger.html
 docs/viva-guide.md
 docs/viva-questions.md
+docs/worldwide.md
 frontend/.env.example
 frontend/index.html
 frontend/package.json
@@ -51,8 +53,10 @@ frontend/src/MapView.jsx
 frontend/src/SearchBox.jsx
 frontend/src/api.js
 frontend/src/icons.jsx
+frontend/src/location.js
 frontend/src/main.jsx
 frontend/src/styles.css
+frontend/test/location.test.js
 frontend/vite.config.js
 netlify.toml
 output/pdf/navic-minor-project-report.pdf
@@ -72,3 +76,4 @@ scripts/unpack_data.py
 tests/conftest.py
 tests/test_api.py
 tests/test_preparation.py
+tests/test_world.py

@@ -1,7 +1,7 @@
 # Phase 6 — deploy the C++ API publicly
 
 ## Current state
-The application, tests, compressed graph and deployment files are ready. **No public API URL has been verified yet.** GitHub and Render account connections are required. A local screenshot or successful Dockerfile review is not public deployment evidence. Docker is not installed on the development Mac, so the container must still be built on Render/CI or another Docker-enabled machine.
+The original Delhi build went live on Render. Service: [navic-delhi](https://navic-delhi.onrender.com/), Singapore, Free plan. The C++ server automatically allows its assigned Render origin. Leave Docker Command empty to use the image entrypoint. See [worldwide update](worldwide.md) for the current external providers.
 
 ## Connect accounts so the assistant can deploy
 1. Open the **Plugins** directory in Codex (or the shared [ChatGPT plugins directory](https://chatgpt.com/plugins)). Search **GitHub**, open it and install it. Complete the GitHub sign-in/authorization flow and include the intended Navic repository in its access scope. If the repository does not exist yet, it can be created after account access is confirmed; repository visibility must be chosen deliberately.

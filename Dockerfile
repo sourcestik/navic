@@ -7,7 +7,7 @@ COPY frontend/ ./
 RUN pnpm run build
 
 FROM debian:bookworm-slim AS cpp
-RUN apt-get update && apt-get install -y --no-install-recommends g++ gzip && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends g++ gzip libcurl4-openssl-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY backend/ backend/
 COPY scripts/build.sh scripts/build.sh
@@ -16,7 +16,7 @@ COPY data/graph.ndjson.gz data/graph.ndjson.gz
 RUN gzip -d data/graph.ndjson.gz
 
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends libstdc++6 ca-certificates && rm -rf /var/lib/apt/lists/* && useradd --create-home --uid 10001 navic
+RUN apt-get update && apt-get install -y --no-install-recommends libstdc++6 libcurl4 ca-certificates && rm -rf /var/lib/apt/lists/* && useradd --create-home --uid 10001 navic
 WORKDIR /app
 COPY --from=cpp /src/build/navic-api /app/navic-api
 COPY --from=cpp /src/data/graph.ndjson /app/data/graph.ndjson

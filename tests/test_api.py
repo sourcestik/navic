@@ -11,7 +11,8 @@ def test_health_and_coverage(api):
     assert status == 200 and health["status"] == "ok"
     assert health["nodes"] > 100000 and health["edges"] > health["nodes"]
     _, coverage, _ = call(api, "/coverage")
-    assert coverage["bbox"] == [28.5, 76.98, 28.7, 77.25]
+    assert coverage["bbox"] == [-90,-180,90,180]
+    assert coverage["local_bbox"] == [28.5, 76.98, 28.7, 77.25]
     assert coverage["turn_restrictions"] is False
 
 
@@ -61,7 +62,7 @@ def test_bad_enums(api, journey, field, value, expected):
     ({"lat": True, "lon": 77}, "INVALID_COORDINATE"),
     ({"lat": None, "lon": 77}, "INVALID_COORDINATE"),
     ({"lat": 28.6}, "INVALID_COORDINATE"),
-    ({"lat": 19, "lon": 72}, "OUTSIDE_COVERAGE")])
+    ({"lat": 19, "lon": 181}, "INVALID_COORDINATE")])
 def test_bad_coordinates(api, journey, source, code):
     status, result, _ = call(api, "/route", {**journey, "source": source})
     assert status == 422 and result["error"]["code"] == code
@@ -82,15 +83,15 @@ def test_content_type_and_size(api, journey):
 
 
 def test_search_and_reverse(api, journey):
-    status, result, _ = call(api, "/geocode?q=NSUT")
+    status, result, _ = call(api, "/geocode?scope=local&q=NSUT")
     assert status == 200 and any("Netaji" in place["name"] for place in result["results"])
-    assert call(api, "/geocode?q=zxyqvbnnoresults")[1]["results"] == []
+    assert call(api, "/geocode?scope=local&q=zxyqvbnnoresults")[1]["results"] == []
     p = journey["source"]
     status, result, _ = call(api, f'/reverse-geocode?lat={p["lat"]}&lon={p["lon"]}')
     assert status == 200 and result["approximate"] is True and result["result"]["distance_m"] < 1
 
 
-@pytest.mark.parametrize("query", ["/geocode", "/geocode?q=a", "/geocode?q=NSUT&limit=0", "/geocode?q=NSUT&limit=2.5", "/reverse-geocode?lat=nan&lon=77", "/reverse-geocode?lat=28.6x&lon=77"])
+@pytest.mark.parametrize("query", ["/geocode", "/geocode?q=a", "/geocode?scope=local&q=NSUT&limit=0", "/geocode?scope=local&q=NSUT&limit=2.5", "/reverse-geocode?lat=nan&lon=77", "/reverse-geocode?lat=28.6x&lon=77"])
 def test_bad_queries(api, query):
     assert call(api, query)[0] == 400
 
@@ -109,9 +110,9 @@ def test_cors(api, journey):
 
 def test_rate_limit_and_untrusted_forwarded_headers(api_factory):
     base = api_factory(rate=2)
-    assert call(base, "/geocode?q=NSUT")[0] == 200
-    assert call(base, "/geocode?q=NSUT")[0] == 200
-    status, result, headers = call(base, "/geocode?q=NSUT", headers={"X-Forwarded-For": "1.2.3.4"})
+    assert call(base, "/geocode?scope=local&q=NSUT")[0] == 200
+    assert call(base, "/geocode?scope=local&q=NSUT")[0] == 200
+    status, result, headers = call(base, "/geocode?scope=local&q=NSUT", headers={"X-Forwarded-For": "1.2.3.4"})
     assert status == 429 and result["error"]["code"] == "RATE_LIMITED"
     assert int(headers["Retry-After"]) > 0
     assert call(base, "/health")[0] == 200

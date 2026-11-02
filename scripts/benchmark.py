@@ -22,10 +22,10 @@ def main():
         with urllib.request.urlopen(req, timeout=120) as response:
             return json.load(response)
 
-    source = call("/geocode?q=NSUT")["results"][0]
+    source = call("/geocode?scope=local&q=NSUT")["results"][0]
     rows = []
     for query in ("Vegas", "India Gate"):
-        destination = call("/geocode?q=" + urllib.parse.quote(query))["results"][0]
+        destination = call("/geocode?scope=local&q=" + urllib.parse.quote(query))["results"][0]
         for mode in ("driving", "walking", "cycling"):
             for algorithm in ("dijkstra", "astar"):
                 body = {"source": {k: source[k] for k in ("lat", "lon")},
