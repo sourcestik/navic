@@ -4,7 +4,9 @@
 
 Plan driving, walking and cycling routes between connected roads worldwide. Choose an origin and destination by name or on the map. Browser location is requested on startup. If GPS is unavailable, Navic estimates the visitor’s area using their IP address. You can retry GPS or replace either pin manually.
 
-The default browser route uses OSRM. The NSUT sample journeys demonstrate the original C++ A* and Dijkstra algorithms on a bundled Delhi road network. The world map and global search have no Delhi boundary. See [worldwide routing and location](docs/worldwide.md) for providers, behavior, configuration and limitations. The original Delhi report, benchmarks and viva guide document the local engine.
+The default browser route uses OSRM. The NSUT sample journeys demonstrate the original C++ A* and Dijkstra algorithms on a bundled Delhi road network. The world map and global search have no Delhi boundary. See [worldwide routing and location](docs/worldwide.md) for providers, behavior, configuration and limitations. The report and viva guide distinguish the original Delhi implementation from the worldwide service.
+
+Verified on 2 November 2026: release `883c946` returned a 311.9 km Paris–Brussels driving route over HTTPS. See the [worldwide checks](artifacts/worldwide-smoke.json) and [local engine checks on Render](artifacts/public-smoke-test.json).
 
 ## Requirements
 For backend: libcurl development headers (on Debian/Ubuntu install `libcurl4-openssl-dev`), a C++17 compiler (`clang++` or `g++`), POSIX/macOS/Linux environment and Python 3.9+ for data unpacking/tests. CMake is optional; the supplied build script does not require it. For frontend builds: Node 22.12+ (Node 24 used here), and pnpm 11.25.0. No paid key is needed. Docker is an alternative build/deployment path.
@@ -53,9 +55,9 @@ curl -s http://127.0.0.1:8080/route \
 |---|---|
 | GET /health | Readiness and graph counts |
 | GET /coverage | Bounds, modes and provenance |
-| GET /geocode | Local name/alias search |
+| GET /geocode | Worldwide place search (or scope=local for the bundled gazetteer) |
 | GET /reverse-geocode | Nearest named feature, approximate |
-| POST /route | Shortest-distance route |
+| POST /route | Worldwide OSRM route or local shortest-distance route |
 | GET /network | Offline road backdrop |
 | GET /openapi.json | Machine-readable API contract |
 | GET /docs | Interactive Swagger UI |
@@ -113,7 +115,7 @@ netlify.toml                     Separate static frontend deployment
 `docs/file-tree.txt` in the source bundle gives the full delivered file inventory.
 
 ## Study and defend
-Read the [13-page project report](output/pdf/navic-minor-project-report.pdf), [viva guide](docs/viva-guide.md), [60 questions and answers](docs/viva-questions.md), [demo script](docs/demo-script.md) and [one-page revision sheet](output/pdf/navic-viva-cheat-sheet.pdf). See [Phase 7](docs/07-documentation.md) to regenerate the PDFs.
+Read the [project report](output/pdf/navic-minor-project-report.pdf), [viva guide](docs/viva-guide.md), [60 questions and answers](docs/viva-questions.md), [demo script](docs/demo-script.md) and [one-page revision sheet](output/pdf/navic-viva-cheat-sheet.pdf). See [Phase 7](docs/07-documentation.md) to regenerate the PDFs.
 Read `docs/worldwide.md` alongside the original Delhi material. Start with `docs/viva-guide.md`: two-/five-minute walkthroughs, block-by-block source explanations, concept primers, choices and honest weaknesses. Then use `docs/viva-questions.md` (60 answers and follow-ups), `docs/demo-script.md` and `docs/cheat-sheet.md`. An interactive mock viva follows completion of the build/deployment: one question at a time, grading and feedback.
 
 ## Limitations and attribution

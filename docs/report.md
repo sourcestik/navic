@@ -1,5 +1,5 @@
 # Navic
-## A C++ Map Navigator for a Delhi Pilot Region
+## Worldwide Road Navigation with a Custom Delhi Routing Engine
 
 **Minor project report · B.Tech Electrical Engineering**
 
@@ -9,13 +9,13 @@ Prepared: 2 November 2026
 
 **Implementation:** C++17 REST API, React, Leaflet and OpenStreetMap.
 
-**Submission status:** The application and local verification are complete. Public API deployment is prepared but remains pending account connection and a successful public smoke test. This report must be updated with the real deployment URL, deployed commit and cloud results before final submission.
+**Public deployment:** On 2 November 2026, Render served version 2.0.0 at https://navic-delhi.onrender.com (release 883c946). The public API returned a Paris–Brussels driving route of 311.9 km in an estimated 3 h 37 min and rejected New York–London with 404 NO_ROUTE.
 
 Student identity, roll number, supervisor details and any institution-specific certificate/declaration must be supplied by the student. They have not been invented. AI assistance should be disclosed according to the institution's policy.
 
 ![Navic running with the NSUT to Vegas Mall route](screenshots/navic-route.jpg)
 
-**Reading map:** problem and requirements; literature; architecture; data; algorithms; API; interface; testing; results; deployment; limitations; references.
+Chapters 2–11 describe the custom Delhi engine and baseline measurements. Chapter 12 explains the worldwide path used by default in the browser.
 
 ---
 
@@ -23,9 +23,9 @@ Student identity, roll number, supervisor details and any institution-specific c
 
 Navic is an educational map navigator that demonstrates how a real street network becomes a searchable graph and a publicly deployable web API. The browser supports place search, source and destination selection, three travel modes, a route line, road distance, an estimated duration and basic turn instructions. A C++17 server implements Dijkstra and A* directly over adjacency lists built from OpenStreetMap (OSM) data.
 
-The delivered pilot covers latitude 28.50–28.70 north and longitude 76.98–77.25 east, from Dwarka through parts of central Delhi. It contains 309,697 nodes, 708,631 directed edges and 19,907 named places. It is not a full Delhi NCR service. Preprocessing occurs once; the server loads a saved graph and needs no external routing or geocoding key during requests.
+The bundled local engine covers latitude 28.50–28.70 north and longitude 76.98–77.25 east, from Dwarka through parts of central Delhi. It contains 309,697 nodes, 708,631 directed edges and 19,907 named places. It is not a full Delhi NCR service. Preprocessing occurs once; the server loads a saved graph and needs no external routing or geocoding key during requests.
 
-Local verification passed 16,529 C++ assertions and 45 Python integration/preparation tests. Both algorithms produced equal shortest-distance costs for the recorded examples. A* explored fewer nodes in these samples. The final data-loading process used approximately 134.1 MiB maximum resident memory on the development Mac. These are local observations, not cloud performance guarantees. A public deployment remains the outstanding college deliverable.
+Local verification passed 16,529 C++ assertions and 52 Python integration/preparation tests and six browser-location unit tests. Both algorithms produced equal shortest-distance costs for the recorded examples. A* explored fewer nodes in these samples. The final data-loading process used approximately 134.1 MiB maximum resident memory on the development Mac. These are local observations, not cloud performance guarantees. The public worldwide service is tested in chapter 12.
 
 ## Objectives
 - Implement and explain shortest-path algorithms on a genuine geographical network.
@@ -43,7 +43,7 @@ Local verification passed 16,529 C++ assertions and 45 Python integration/prepar
 | Output | GeoJSON route, distance, static ETA and basic steps |
 | Reliability | Validated inputs, structured errors, bounded resources and tests |
 | Delivery | Complete source, deployment configuration, report and viva material |
-| Public API | Real HTTPS URL and successful smoke test; currently pending |
+| Public API | Verified public HTTPS service; see chapter 12 |
 
 Alternative routes, live traffic, voice guidance and full NCR coverage are optional future work. The prototype is intended for demonstration and learning, not authoritative road-safety guidance.
 
@@ -55,7 +55,7 @@ Dijkstra's 1959 shortest-path method [1] expands the lowest known path cost firs
 
 OSM [3] is an openly licensed geographical database. Its nodes, ways and relations supply road geometry and attributes; the map pictures displayed in a browser are a separate product. Overpass [4] is used to obtain the bounded extract. The OSM tile policy [5] governs the optional online background. The public Nominatim policy prohibits client-side autocomplete [6], so Navic searches its own bundled named-feature index instead.
 
-External engines such as OSRM are an alternative to writing a router. They offer much more mature preprocessing and routing profiles, but treating one as the main engine would hide the algorithm implementation that this viva needs to demonstrate. Navic therefore uses its own graph and algorithms. No external-engine accuracy or speed comparison has been performed, and none is claimed.
+For the Delhi algorithm demonstration, external engines such as OSRM are an alternative to writing a router. They offer much more mature preprocessing and routing profiles, but treating one as the main engine would hide the algorithm implementation that this viva needs to demonstrate. Navic therefore uses its own graph and algorithms. No external-engine accuracy or speed comparison has been performed, and none is claimed.
 
 | Choice | Reason and trade-off |
 |---|---|
@@ -188,7 +188,7 @@ The C++ process binds the configured HOST and PORT, loads the graph once, and se
 The response includes geometry, distance_m, duration_s, steps, snapped endpoint information and algorithm statistics. The complete schemas and examples are available in docs/openapi.json. The contract is explicitly generated by scripts/generate_openapi.py; C++ does not automatically infer it from handlers.
 
 ## Validation and resource controls
-JSON bodies are limited to 16 KiB. Coordinates must be finite numbers, within global coordinate ranges and the pilot bounds. Modes and algorithms are allowlisted. A token bucket defaults to 180 requests/minute per socket peer; its identity map is bounded. Forwarded client headers are not trusted, so clients behind a hosting proxy may share a bucket. This requires observation after deployment.
+JSON bodies are limited to 16 KiB. Coordinates must be finite numbers, within global latitude/longitude ranges; the local bounds select the engine. Modes and algorithms are allowlisted. A token bucket defaults to 180 requests/minute per socket peer; its identity map is bounded. Forwarded client headers are not trusted, so clients behind a hosting proxy may share a bucket. This requires observation after deployment.
 
 The route cache holds at most 64 entries and skips individual serialized responses over 64 KiB, bounding cached serialized payloads to about 4 MiB, plus object overhead. It caches graph routes, while request-specific snap information is attached separately. CORS allows exact configured browser origins; it is not authentication or protection against non-browser callers.
 
@@ -200,10 +200,10 @@ The route cache holds at most 64 entries and skips individual serialized respons
 
 The React interface combines a route-planning panel with a Leaflet map. Search inputs debounce requests, support keyboard selection and cancel outdated work. Editing an endpoint clears the previous selection and result. Travel-mode or algorithm changes invalidate the existing route so the displayed answer cannot silently belong to old inputs.
 
-Source and destination can be selected through place search, map clicks or the browser's location control. Location access requires the browser's permission and an appropriate secure context. Permission denial and unsupported/unavailable location are handled as user-visible errors; actual personal-location acquisition has not been exercised in this verification session.
+Source and destination can be selected through place search, map clicks or the browser's location control. Location access requires the browser's permission and an appropriate secure context. Denied, timed-out or unavailable GPS triggers a labeled IP estimate; manual input remains available if both fail; actual personal-location acquisition has not been exercised in this verification session.
 
 ## Map and result display
-The interface draws endpoint markers, the route line, a coverage boundary and dashed snapping gaps. A result panel shows distance, estimated duration, maneuver count and search statistics. Online OSM tiles are optional: the user can switch to bundled road vectors for a local offline demonstration. WGS84 latitude/longitude is used for data interchange; Leaflet displays the map using its normal Web Mercator map projection.
+The interface draws endpoint markers, the route line and dashed snapping gaps. A result panel shows distance, estimated duration, maneuver count and search statistics. Online OSM tiles are optional: the user can switch to bundled road vectors for a local offline demonstration. WGS84 latitude/longitude is used for data interchange; Leaflet displays the map using its normal Web Mercator map projection.
 
 The UI converts GeoJSON [longitude, latitude] ordering correctly when passing points to Leaflet's [latitude, longitude] APIs. Confusing these orders can place a route in the wrong country even when the graph algorithm is correct.
 
@@ -227,11 +227,11 @@ Testing proceeds from graph correctness to the real HTTP boundary and finally br
 | Scenario | Expected | Recorded result |
 |---|---|---|
 | Random graphs and targeted graph cases | Oracle-equivalent shortest cost/reachability | 16,529 native assertions passed |
-| HTTP and preparation suite | Valid responses and correct rejection behavior | 45 pytest tests passed |
+| HTTP and preparation suite | Valid responses and correct rejection behavior | 52 pytest tests passed |
 | Three modes, both algorithms | Valid real-data routes; equal algorithm costs | Passed |
 | Same source and destination | Zero distance and time; valid geometry | Passed |
 | Disconnected graph | 404 NO_ROUTE | Passed |
-| Outside pilot / excessive snap gap | 422 with specific error | Passed |
+| Excessive local snap gap | 422 with specific error | Passed |
 | Malformed JSON / bad content type | 400 / 415 | Passed |
 | Oversized body | 413 | Passed |
 | CORS allowlist and preflight | Exact headers or 403 | Passed |
@@ -240,8 +240,8 @@ Testing proceeds from graph correctness to the real HTTP boundary and finally br
 | Production frontend build | Successful static bundle | Passed |
 | Desktop/mobile/offline flows | Correct visible interaction | Browser verified |
 | Personal device geolocation | Permission and position handling | Not exercised |
-| Linux CI and Docker build | Platform build and tests | Pending remote execution |
-| Public deployment | HTTPS smoke test from independent device | Pending account connection |
+| Linux CI and Docker build | Platform build and tests | Passed: GitHub Linux CI and Render image build |
+| Public deployment | Client calls to public HTTPS service | Passed for all three modes |
 
 ## Evidence and reproduction
 The exact test items are in artifacts/pytest-results.xml. Route observations are in artifacts/benchmark.json, local smoke results in artifacts/local-smoke-test.json, and startup memory in artifacts/resource-check.json. docs/05-testing.md expands the expected/actual table and identifies manual checks.
@@ -308,14 +308,14 @@ Documentation checked on 2 November 2026 lists Render free web service resources
 
 The frontend allows time for a cold start and displays actionable errors. Before a viva, visit /health once and wait for readiness. Do not hide resource limits using an artificial keepalive loop. Rehearse the local offline fallback: run the C++ server, use the built frontend and select the bundled road layer.
 
-**Current evidence:** Local app and API verified. Docker is absent on the development machine; container build, Linux CI, deployed RAM and public HTTPS behavior remain unverified. No live hostname has been invented or substituted with localhost.
+On 2 November 2026, Render served version 2.0.0 at https://navic-delhi.onrender.com (release 883c946). The public API returned a Paris–Brussels driving route of 311.9 km in an estimated 3 h 37 min and rejected New York–London with 404 NO_ROUTE. GitHub Linux CI and Render Docker builds passed. Local memory measurements do not establish cloud performance.
 
 ---
 
 # 11. Limitations, future scope and conclusion
 
-## Known limitations
-- The pilot bounding box excludes much of Delhi NCR, and clipping can remove routes that leave and re-enter it.
+## Known limitations of the custom Delhi engine
+- The local graph bounding box excludes much of Delhi NCR, and clipping can remove routes that leave and re-enter it.
 - OSM data is a snapshot; incomplete or incorrect tags affect the resulting graph.
 - Turn restrictions, barriers, conditional permissions and full regional legal defaults are not implemented.
 - Distance is minimized; ETA uses a static model without traffic, signals or individual behavior.
@@ -324,22 +324,43 @@ The frontend allows time for a cold start and displays actionable errors. Before
 - Maneuvers are basic geometric instructions, without mature lane or roundabout guidance.
 - Rate limiting by socket peer can group users behind a reverse proxy. CORS is not authentication.
 - Startup measurements and sample routes do not establish concurrent production capacity.
-- Public deployment still requires connected accounts and live evidence.
+- Public worldwide searches and routes depend on shared external providers.
 
 ## Prioritized future work
-First, deploy the existing revision and record real platform memory, cold-start behavior and failure recovery. Next, add edge-based spatial snapping with a spatial index, preserving accessible entry points rather than arbitrary centroids. Extend the routing state to support turn restrictions and improve access/barrier handling before expanding coverage or making stronger navigation claims.
+First, measure cloud memory under load, cold-start behavior and failure recovery. Next, add edge-based spatial snapping with a spatial index, preserving accessible entry points rather than arbitrary centroids. Extend the routing state to support turn restrictions and improve access/barrier handling before expanding coverage or making stronger navigation claims.
 
 A later evaluation could compare routes with an external engine using matched modes and objectives, documenting differences rather than assuming one engine is ground truth. Time-optimal routing requires time costs and a separately justified heuristic. Alternative routes require a defined diversity criterion; simply changing an algorithm does not guarantee a distinct route. A production service would also need load testing, more complete observability, security review and a sustainable map-tile/data refresh arrangement.
 
 ## Conclusion
 Navic demonstrates the complete local path from open geographical data to a custom graph algorithm, HTTP API and interactive map. Its educational contribution is the ability to inspect and defend the representation, heuristic, validation, interface and measurements. The implementation passes the recorded local checks and includes reproducible deployment configuration and viva material.
 
-The college's public API requirement will be satisfied only after the actual hosted endpoint is deployed and tested. Until then, this report explicitly records a locally verified implementation with deployment pending.
+The map and API are live on Render. The results in chapter 12 demonstrate requests against the hosted endpoint.
 
 ## Three-line revision
 A street navigator combines data modeling, graph search, an API and a map interface.
 Correct shortest paths are conditional on the graph and its cost/access model being correct.
-Demonstrate measured behavior honestly, including incomplete coverage and pending public hosting.
+Demonstrate measured behavior honestly, including offline coverage and shared-service limits.
+
+---
+
+# 12. Worldwide navigation and public verification
+
+## Why keep two engines?
+A global graph would not fit in the memory reserved for the Delhi demonstration. The browser normally requests algorithm=world. The C++ API sends the selected coordinates and travel mode to the FOSSGIS OSRM service. An explicit A* or Dijkstra request uses our graph when both endpoints are inside the extract; otherwise it uses OSRM. The response identifies the actual provider. Only the local algorithm promises to minimize our distance weights.
+
+## Finding places and the starting point
+Photon searches worldwide without a country filter or bounding rectangle. The local index still recognizes NSUT. Leaflet opens on a world overview and centers on the selected origin. The secure browser asks for device coordinates with high accuracy and a ten-second timeout. If unavailable, the browser requests an approximate location based on its public IP. A VPN can place that estimate in another city. The user can retry GPS or choose a starting point manually; a late result cannot overwrite a manual edit.
+
+## What was observed on the public URL?
+| Request | Result |
+|---|---|
+| Berlin search; reverse lookup near Tokyo Station | Berlin in Germany; a Japanese place result |
+| Paris to Brussels, driving | 311.94 km; estimated 3 h 37 min, without live traffic |
+| Central Paris to the Louvre | Walking 1.26 km; cycling 1.74 km |
+| New York to London, driving | HTTP 404 NO_ROUTE, no invented line across the ocean |
+| NSUT to Vegas Mall, driving | Local A*: 2.89 km and about seven minutes |
+
+The test records are artifacts/worldwide-smoke.json and artifacts/public-smoke-test.json. The public gateway allows one routing request per second across this instance. Internet connectivity is necessary for worldwide services; the saved Delhi graph supports a local offline demonstration. Physical GPS accuracy and sustained cloud load were not measured.
 
 ---
 
@@ -365,5 +386,9 @@ The academic references identify the foundational algorithms; full papers are no
 16. Render. Git provider connection. https://render.com/docs/git-provider
 17. Netlify. Pricing. https://www.netlify.com/pricing/
 18. OpenAI. Plugin directory and installation. https://developers.openai.com/plugins/quickstart
+
+19. FOSSGIS. Public OSRM routing service and use policy. https://routing.openstreetmap.de/about.html
+20. Photon. OpenStreetMap geocoder. https://github.com/komoot/photon
+21. FreeIPAPI. IP location service. https://freeipapi.com/
 
 **Supporting material:** README.md; docs/01-requirements.md through docs/08-git.md; docs/openapi.json; docs/viva-guide.md; docs/viva-questions.md; docs/demo-script.md; artifacts/benchmark.json; artifacts/pytest-results.xml; artifacts/resource-check.json.

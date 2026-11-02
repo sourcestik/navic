@@ -1,7 +1,7 @@
 # Phase 6 — deploy the C++ API publicly
 
 ## Current state
-The original Delhi build went live on Render. Service: [navic-delhi](https://navic-delhi.onrender.com/), Singapore, Free plan. The C++ server automatically allows its assigned Render origin. Leave Docker Command empty to use the image entrypoint. See [worldwide update](worldwide.md) for the current external providers.
+On 2 November 2026, Render served version 2.0.0 at https://navic-delhi.onrender.com (release 883c946). The public API returned a Paris–Brussels driving route of 311.9 km in an estimated 3 h 37 min and rejected New York–London with 404 NO_ROUTE. The app and API share one free Docker service in Singapore. Leave Docker Command empty. See [worldwide configuration](worldwide.md).
 
 ## Connect accounts so the assistant can deploy
 1. Open the **Plugins** directory in Codex (or the shared [ChatGPT plugins directory](https://chatgpt.com/plugins)). Search **GitHub**, open it and install it. Complete the GitHub sign-in/authorization flow and include the intended Navic repository in its access scope. If the repository does not exist yet, it can be created after account access is confirmed; repository visibility must be chosen deliberately.
@@ -34,8 +34,8 @@ Serving both from the supplied Docker image is the simplest initial public demon
 
 ## Local Docker verification on a machine with Docker
 ```sh
-docker build -t navic:1.0 .
-docker run --rm -p 8080:8080 --env-file .env navic:1.0
+docker build -t navic:2.0 .
+docker run --rm -p 8080:8080 --env-file .env navic:2.0
 ```
 
 Create `.env` from `.env.example` first. The Procfile is included for compatible hosts, but **Render uses Dockerfile**, not Procfile or requirements.txt, to run this C++ service. `requirements.txt` is for Python tests only.
@@ -75,17 +75,17 @@ python3 scripts/smoke_test.py "$NAVIC_API_URL" --output artifacts/public-smoke-t
 The script checks graph readiness, searches the actual campus/mall and computes driving/walking/cycling routes. Confirm that the saved URL is genuinely public HTTPS. For a full frontend check, use a second device or mobile data; a local-only URL will not satisfy that test.
 
 ## Final live checklist
-- [ ] GitHub contains the intended commit and data bundle; no credentials are tracked.
-- [ ] Render deployment is successful on the Free plan.
-- [ ] The actual public HTTPS /health returns status=ok and the expected graph version/counts.
+- [x] GitHub contains the intended commit and data bundle; no credentials are tracked.
+- [x] Render deployment is successful on the Free plan.
+- [x] The actual public HTTPS /health returns status=ok and the expected graph version/counts.
 - [ ] /docs displays the contract and can execute POST /route.
-- [ ] The public smoke-test artifact records successful routes in all three modes.
-- [ ] Netlify calls that same live API, and browser CORS preflight succeeds.
-- [ ] Invalid/outside inputs show useful errors in the UI and API.
+- [x] The public smoke-test artifact records successful routes in all three modes.
+- Not applicable: the live web app and API share a Render origin; Netlify is optional.
+- [ ] Invalid or disconnected inputs show useful errors in the UI and API.
 - [ ] Cold start is tested after idle and documented; no artificial keepalive loop is added.
 - [ ] Deployed RAM and logs have been inspected; local memory numbers are not substituted.
 - [ ] A second-device request succeeds without the development Mac serving it.
-- [ ] Actual URLs, deployed commit and timestamp are added to README/report.
+- [x] Actual URLs, deployed commit and timestamp are added to README/report.
 
 ## Three-line revision
 Build the container, include the graph, bind the platform's port and verify the real HTTPS URL.

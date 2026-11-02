@@ -1,5 +1,7 @@
 # Phase 2 — architecture
 
+This phase records the original Delhi implementation. For the deployed worldwide default, provider choices, GPS/IP flow and updated verification, read the [worldwide release notes](worldwide.md).
+
 ```mermaid
 flowchart LR
   OSM[OpenStreetMap via Overpass] -->|one-time download| Prep[Python data preparation]

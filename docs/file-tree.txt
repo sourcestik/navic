@@ -1,5 +1,6 @@
 .dockerignore
 .env.example
+.gitattributes
 .github/workflows/ci.yml
 .gitignore
 CMakeLists.txt
@@ -10,8 +11,10 @@ README.md
 THIRD_PARTY_NOTICES.md
 artifacts/benchmark.json
 artifacts/local-smoke-test.json
+artifacts/public-smoke-test.json
 artifacts/pytest-results.xml
 artifacts/resource-check.json
+artifacts/worldwide-smoke.json
 backend/include/navic/graph.hpp
 backend/include/navic/world.hpp
 backend/src/main.cpp

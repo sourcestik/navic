@@ -3,17 +3,17 @@
 Read this with the source open. Do not memorize an explanation that you cannot demonstrate. Deployment is a separate acceptance item: only say “publicly deployed” after the live smoke test has passed.
 
 ## 1. Two-minute walkthrough
-“My project is Navic, a map navigator for a bounded Delhi NCR pilot covering Dwarka and parts of central Delhi. A user searches for a source and destination, selects driving, walking or cycling, and gets a road route, distance, estimated travel time and basic turn instructions.
+“My project is Navic, a worldwide road planner with a custom routing engine for the Delhi pilot. A user searches for a source and destination, selects driving, walking or cycling, and gets a road route, distance, estimated travel time and basic turn instructions.
 
 “The frontend uses React for user-interface state and Leaflet for the map. The backend is a C++17 HTTP API. I implemented Dijkstra and A* from scratch using adjacency lists and a minimum-priority queue. OpenStreetMap provides the road data. A Python preparation script converts a downloaded extract into a directed, weighted graph; Python is not the production API language.
 
-“When a request arrives, the API validates coordinates, checks coverage and snaps the selected points to nearby usable road nodes. It prefers nodes on a shared weakly connected component so an isolated parking loop does not defeat an otherwise reasonable route. The final algorithm still checks directed reachability. Dijkstra expands according to distance already traveled. A* adds a straight-line geographic estimate to the destination. Both optimize distance and should return the same minimum cost.
+“In the local engine, when a request arrives, the API validates coordinates, checks coverage and snaps the selected points to nearby usable road nodes. It prefers nodes on a shared weakly connected component so an isolated parking loop does not defeat an otherwise reasonable route. The final algorithm still checks directed reachability. Dijkstra expands according to distance already traveled. A* adds a straight-line geographic estimate to the destination. Both optimize distance and should return the same minimum cost.
 
 “The result is a GeoJSON line. ETA is the sum of segment travel times using fixed speeds, not live traffic. The API also supports local place search, approximate reverse geocoding, health checks and Swagger documentation. Tests cover algorithms, permissions, HTTP validation, CORS and rate limiting.
 
-“The important limitations are bounded coverage, incomplete OSM restrictions, nearest-node snapping and approximate guidance. I distinguish the educational algorithm from a production navigation engine.”
+“The local engine’s limitations are bounded coverage, incomplete OSM restrictions, nearest-node snapping and approximate guidance. I distinguish the educational algorithm from a production navigation engine.”
 
-Add the actual live URL and the verified test totals when demonstrating. Do not claim the pending hosting step has already happened.
+“The worldwide mode delegates to OSRM; I did not implement its engine. Photon supplies global search. We verified Paris to Brussels on the public API. GPS estimates can be replaced manually; IP fallback is visibly marked as approximate.”
 
 ## 2. Five-minute walkthrough
 **Minute 1 — problem and scope.** Start with the college brief: a map navigator plus a publicly deployed API. Demonstrate a source and destination. Explain the chosen area, three modes and distinction between distance optimization and time estimation. The graph is a static snapshot, not live traffic. OSM data is open under ODbL; a free public tile server has a usage policy.
@@ -22,7 +22,7 @@ Add the actual live URL and the verified test totals when demonstrating. Do not 
 
 **Minute 3 — algorithm.** Trace a small graph with S→A=2, S→B=5, A→B=1 and B→T=3. Dijkstra discovers B at 5 but improves it to 3 through A; T then has cost 6. The priority queue may retain the old entry for B, so the stale-entry check skips it. A* changes queue priority from g to g+h. Haversine gives a great-circle distance in meters. Every edge is at least its endpoint haversine distance; triangle inequality therefore makes the heuristic consistent. Stop when the destination is removed with its current best distance, then follow parent edge IDs backwards.
 
-**Minute 4 — API and UI.** Show /health, /openapi.json and /docs. Send a POST /route request. Point out type checks, finite values, coverage, modes and errors. React holds endpoints, mode, algorithm, loading and route state. A debounced search calls the local index; stale requests are aborted. Leaflet draws geometry, while route metrics and instructions are normal React elements. Explain coordinate ordering: JSON endpoint objects are explicit lat/lon; GeoJSON positions are lon/lat.
+**Minute 4 — API and UI.** Show /health, /openapi.json and /docs. Send a POST /route request. Point out type checks, finite values, coverage, modes and errors. React holds endpoints, mode, algorithm, loading and route state. A debounced search calls the worldwide geocoder, supplemented by the local index; stale requests are aborted. Leaflet draws geometry, while route metrics and instructions are normal React elements. Explain coordinate ordering: JSON endpoint objects are explicit lat/lon; GeoJSON positions are lon/lat.
 
 **Minute 5 — verification, deployment and limits.** Show the independent algorithm oracle, API tests and recorded benchmark. Distinguish search timing from whole-request timing, and local timing from free-host timing. Docker separates frontend build, C++ compilation and the smaller runtime. Render supplies the public port and TLS; Netlify can serve the frontend separately with an environment-configured API URL. The graph is inside the image, so an ephemeral filesystem restart does not require fetching OSM again. Demonstrate the local offline road backdrop. Finish with two concrete future improvements: edge-based turn restrictions and a spatial index for faster snapping.
 
@@ -88,6 +88,10 @@ Trace the fixture before discussing the 300,000-node graph. The algorithm is exa
 
 The worker model is synchronous per request. Multiple requests run on a bounded pool of threads. The frontend uses asynchronous fetch; that does not make the C++ routing function asynchronous.
 
+### Worldwide routing and origin detection
+In backend/include/navic/world.hpp, get bounds the HTTPS time and response size; encode escapes search text; places converts Photon GeoJSON into suggestions; route chooses the travel profile and converts OSRM geometry and maneuvers. Without profile selection, a walking trip could silently receive driving directions. NO_ROUTE means no connected path was returned, whereas PROVIDER_UNAVAILABLE means the service could not answer.
+In frontend/src/location.js, locateOrigin tries GPS first, then ipEstimate asks from the visitor’s browser. Asking from Render would estimate the server’s location. Manual selection cancels pending updates so a late IP estimate cannot move a pin the user already placed.
+
 ### scripts/prepare_data.py
 `make_query` selects roads and named node/way/relation features inside a bbox. A cached extract can be rebuilt without new network requests. `permissions` applies general access, then more specific mode tags, then direction rules. It rejects non-road features, construction and area=yes polygons. `speeds` uses conservative defaults, recognizes simple maxspeed values and converts mph. These are estimates, not observed travel speeds.
 
@@ -96,15 +100,15 @@ The worker model is synchronous per request. Multiple requests run on a bounded 
 Every consecutive node pair in a permitted way becomes up to two directed edges. All intermediate road geometry is retained; no OSMnx simplification is applied. Haversine lengths are unrounded floats so precision is preserved. Names are interned in one array. The writer emits a header and individual NDJSON records, plus deterministic gzip and a SHA-256 checksum. A road GeoJSON file supplies the offline backdrop. Metadata records the actual OSM timestamp and graph counts. Missing data or an Overpass partial-result remark fails the build.
 
 ### frontend/src/main.jsx
-`App` owns the source, destination, mode, algorithm, route and status. `initialize` loads health and coverage concurrently, with cancellation. `invalidate` increments a request revision, aborts current work and clears stale route information whenever route inputs change. Without that, the UI could show a driving result after switching to walking.
+`App` owns the source, destination, mode, algorithm, route and status. `initialize` loads readiness, with cancellation. `invalidate` increments a request revision, aborts current work and clears stale route information whenever route inputs change. Without that, the UI could show a driving result after switching to walking.
 
-`pick` checks the displayed bounds and assigns a clicked position to the selected endpoint. `compute` sends a JSON POST and only accepts the result if the request still corresponds to current inputs. `useLocation` delegates location permission to the browser and rejects locations outside coverage. `example` searches the real index rather than inserting invented results. The form, metric panel, direction list and information dialog are different presentations of the same state. React escapes strings by default; OSM names are not injected as HTML.
+`pick` assigns a clicked position to the selected endpoint. `compute` sends a JSON POST and only accepts the result if the request still corresponds to current inputs. `useLocation` delegates location permission to the browser and falls back to IP if GPS fails. `example` searches the real index rather than inserting invented results. The form, metric panel, direction list and information dialog are different presentations of the same state. React escapes strings by default; OSM names are not injected as HTML.
 
 ### frontend/src/SearchBox.jsx
-The component stores the editable query separately from the selected place. `useId` links labels and accessibility attributes. A 300 ms timer reduces request frequency; an AbortController cancels superseded searches. Outside-click handling closes suggestions. Arrow keys and Enter select a result; Escape closes the menu. An editing ref prevents a parent selection reset from erasing the user's first replacement keystroke. Empty search results are shown honestly instead of inventing addresses.
+The component stores the editable query separately from the selected place. `useId` links labels and accessibility attributes. A 500 ms timer reduces request frequency; an AbortController cancels superseded searches. Outside-click handling closes suggestions. Arrow keys and Enter select a result; Escape closes the menu. An editing ref prevents a parent selection reset from erasing the user's first replacement keystroke. Empty search results are shown honestly instead of inventing addresses.
 
 ### frontend/src/MapView.jsx
-A ref holds the Leaflet instance because Leaflet manages its own DOM. Initialization creates tiles, layers, zoom and scale controls, and a click handler. A ResizeObserver updates the canvas when the layout changes. Separate effects manage coverage, endpoint markers, route lines and the offline layer. Cleanup removes the map and cancels pending requests. GeoJSON coordinates are swapped to Leaflet lat/lng order. Dashed connectors show snapping gaps; they are not included in route distance. Tooltip labels use textContent. The tile layer follows the standard OSM URL and displays attribution. Offline mode loads local vector roads; it does not scrape tiles.
+A ref holds the Leaflet instance because Leaflet manages its own DOM. Initialization creates tiles, layers, zoom and scale controls, and a click handler. A ResizeObserver updates the canvas when the layout changes. Separate effects manage the current map center, endpoint markers, route lines and the offline layer. Cleanup removes the map and cancels pending requests. GeoJSON coordinates are swapped to Leaflet lat/lng order. Dashed connectors show snapping gaps; they are not included in route distance. Tooltip labels use textContent. The tile layer follows the standard OSM URL and displays attribution. Offline mode loads local vector roads; it does not scrape tiles.
 
 ### Other frontend files
 `api.js` centralizes the base URL, 90-second cold-start timeout, error parsing and formatting. An empty base URL uses the same origin; Netlify needs the real deployed API URL at build time. `icons.jsx` contains original inline SVG UI icons. `styles.css` defines the two-column desktop layout, stacked mobile layout, focus states and reduced-motion behavior. Web fonts have system fallbacks; the application remains usable without fetching fonts. `index.html` mounts React; `vite.config.js` proxies development API calls and builds static assets. `package.json` and its lockfile specify reproducible dependencies.
@@ -205,7 +209,7 @@ There are three different caches: a saved graph on disk, the graph loaded into R
 3. Read graph.hpp and explain every state variable in the search loop.
 4. Inspect an actual /route request and response; identify all units and coordinate order.
 5. Run the tests and explain one independent oracle case and one HTTP validation case.
-6. Practice a failure: select a point outside coverage, then demonstrate offline roads locally.
+6. Practice a failure: select a disconnected road pair, then demonstrate offline roads locally.
 7. Read the question bank and cheat sheet; answer aloud before revealing answers.
 
 After the build and deployment are complete, the live mock viva is interactive: one question, your answer, a score out of 10, what was missed, and the ideal answer. Difficulty increases from architecture to algorithms, data, deployment and defense. The session continues until you say stop. A written question bank does not replace that interactive session.

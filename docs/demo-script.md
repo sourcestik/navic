@@ -1,7 +1,7 @@
 # Live demo script and failure recovery
 
 ## Before the viva (10 minutes)
-Keep the actual deployed frontend, API /docs and /health tabs ready. If public deployment is not yet completed, describe the local demonstration as local and finish deployment before submitting. Check the exact commit/data version. Start the local fallback and test it before the room loses connectivity.
+Open https://navic-delhi.onrender.com and /docs. For the worldwide demo, select Paris and Brussels, drive, and show distance and turns. For the custom algorithm demo follow the steps below. Start the local fallback before presenting.
 
 ```sh
 cd /Users/swastikbarik/Documents/Navic
@@ -22,7 +22,7 @@ The compiled binary and `frontend/dist` should already exist. If rebuilding is n
 | 2:00 | Change algorithm to Dijkstra and calculate again | “The optimal distance stays the same, while search effort can change.” |
 | 2:30 | Switch to Walk and calculate | “The travel-mode mask changes eligible edges and ETA; it is not just a different icon.” |
 | 3:00 | Open /docs; show POST /route schema and execute | “The backend is independently usable by another client; it is not coupled to React.” |
-| 3:40 | Show one invalid/outside-coverage request | “The API returns a structured validation error rather than a misleading route.” |
+| 3:40 | Show a New York to London driving request | “The API returns a structured no-route error rather than a misleading route.” |
 | 4:10 | Switch the local app to Offline roads | “The road graph and backdrop are bundled. Routing does not require tiles or a live geocoder.” |
 | 4:40 | Open test evidence and state limitations | “The algorithm was checked against Floyd–Warshall. Turn restrictions and live traffic remain out of scope.” |
 
@@ -30,8 +30,8 @@ The compiled binary and `frontend/dist` should already exist. If rebuilding is n
 - **API is sleeping:** show /health and allow about a minute. Explain the free-host cold start, then retry once. Do not keep clicking and create a request flood.
 - **Internet unavailable:** use the local C++ app and select Offline roads. Bundled assets and road vectors work without external tiles. The Swagger UI uses a pinned CDN and may not load offline; show `docs/openapi.json` instead.
 - **API deployed but frontend fails:** inspect the actual VITE_API_BASE_URL and exact ALLOWED_ORIGINS. Demonstrate the API with curl or Swagger while explaining the CORS/configuration issue honestly.
-- **Place missing:** search an alternative known landmark or click within the coverage boundary. Do not claim a worldwide address service.
-- **No route:** explain modes, access, isolated components and the boundary. Use the tested NSUT–Vegas demo pair rather than pretending every pair is reachable.
+- **Place missing:** search for the landmark with its city or country, or click a nearby road. Worldwide search does not guarantee every house address.
+- **No route:** explain the mode, access rules and disconnected roads. Use the tested NSUT–Vegas demo pair rather than pretending every pair is reachable.
 - **Machine fails:** use the report screenshots and saved benchmark/test artifacts to explain the result, but label this as recorded evidence, not a live run.
 
 ## A direct API demonstration

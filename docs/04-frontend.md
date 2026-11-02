@@ -1,5 +1,7 @@
 # Phase 4 — React and Leaflet interface
 
+This phase records the original Delhi implementation. For the deployed worldwide default, provider choices, GPS/IP flow and updated verification, read the [worldwide release notes](worldwide.md).
+
 Implemented: debounced keyboard autocomplete, click-to-set endpoints, swapping/clearing, browser geolocation, travel modes, algorithm selection, route polyline, markers, ETA/distance, instruction list, search metrics, loading/errors, coverage boundary, responsive layout, information dialog and a local road backdrop for offline demos.
 
 Run `sh scripts/build_frontend.sh` from the root, then start `./build/navic-api` and open `http://127.0.0.1:8080`. For hot-reload development on a standard Node setup, run `pnpm run dev` inside frontend while the C++ API runs separately. Vite proxies API requests.

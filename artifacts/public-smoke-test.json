@@ -1,0 +1,34 @@
+{
+  "base_url": "https://navic-delhi.onrender.com",
+  "public_https_candidate": true,
+  "health": {
+    "data_version": "2026-11-01T19:03:08Z",
+    "edges": 708631,
+    "nodes": 309697,
+    "places": 19907,
+    "service": "navic-cpp",
+    "status": "ok",
+    "uptime_s": 119.610941529,
+    "version": "2.0.0"
+  },
+  "route_checks": [
+    {
+      "mode": "driving",
+      "distance_m": 2893.4768324396837,
+      "duration_s": 419.5741124576411,
+      "request_ms": 339.253417
+    },
+    {
+      "mode": "walking",
+      "distance_m": 2871.5454954215584,
+      "duration_s": 2153.6591215635976,
+      "request_ms": 364.59545800000006
+    },
+    {
+      "mode": "cycling",
+      "distance_m": 2871.5454954215584,
+      "duration_s": 689.1709189003514,
+      "request_ms": 381.5224159999999
+    }
+  ]
+}

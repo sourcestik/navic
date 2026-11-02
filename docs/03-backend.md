@@ -1,5 +1,7 @@
 # Phase 3 — C++ API and routing engine
 
+This phase records the original Delhi implementation. For the deployed worldwide default, provider choices, GPS/IP flow and updated verification, read the [worldwide release notes](worldwide.md).
+
 Implemented: directed adjacency-list graph, Dijkstra/A*, haversine, mode permissions, component-aware snapping, parent-edge reconstruction, distance/ETA/maneuvers, local geocoder/reverse lookup, graph cache, bounded response cache, CORS, token-bucket rate limiting, logs, errors and OpenAPI endpoints. Python prepares data and runs integration tests; C++ serves all API endpoints.
 
 Run and verify from the project root:

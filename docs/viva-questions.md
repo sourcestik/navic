@@ -1,11 +1,11 @@
 # 60 viva questions with model answers and follow-ups
 
-Answer aloud before reading the model. Tailor answers to the implementation, not to features a production map service might have.
+The graph, snapping, heuristics and benchmarks below refer to the custom Delhi engine. The worldwide default delegates to OSRM; see worldwide.md for its profiles and provider limits. Answer aloud before reading the model. Tailor answers to the implementation, not to features a production map service might have.
 
 ## Basics
 
 ### 1. What problem does Navic solve?
-It lets a user choose two places in a Delhi pilot area and see a shortest-distance road route, estimated travel time and basic turn instructions. It also exposes the same core functions as an HTTP API. A map display alone would not meet the routing or public-API requirement.
+It lets a user choose two places worldwide and see a mode-specific road route, estimated travel time and basic turn instructions. It also exposes the same core functions as an HTTP API. A map display alone would not meet the routing or public-API requirement.
 **Follow-up:** Is this a GPS navigation device? **Answer:** No. It is a browser route planner with optional one-time browser geolocation, not continuous satellite tracking or spoken navigation.
 
 ### 2. What are the main parts of the system?

@@ -25,3 +25,5 @@ Use base URLs without trailing slashes for the backend. An alternate OSRM gatewa
 ## Verification
 
 Run sh scripts/build.sh, python -m pytest and node --test frontend/test/location.test.js. The HTTP suite uses local provider fixtures to test mode dispatch, longitude/latitude order, cross-border routing, reverse geocoding, disconnected networks and outages. The location tests use synthetic positions for GPS success, denial, timeout, unavailable responses and cancellation.
+
+On 2 November 2026, Render served version 2.0.0 at https://navic-delhi.onrender.com (release 883c946). The public API returned a Paris–Brussels driving route of 311.9 km in an estimated 3 h 37 min and rejected New York–London with 404 NO_ROUTE. Berlin search, Tokyo reverse lookup, walking and cycling in Paris also passed. See [worldwide results](../artifacts/worldwide-smoke.json) and [Delhi regression results](../artifacts/public-smoke-test.json).

@@ -1,0 +1,37 @@
+{
+  "url": "https://navic-delhi.onrender.com",
+  "commit": "883c946dd9fd1f0eb4103790a9e1d7624ebb5376",
+  "verified_at": "2026-11-02T13:23:04.070742+00:00",
+  "checks": {
+    "health": "2.0.0",
+    "search": {
+      "context": "Deutschland",
+      "id": "R62422",
+      "kind": "city",
+      "lat": 52.5173885,
+      "lon": 13.3951309,
+      "name": "Berlin",
+      "source": "photon"
+    },
+    "reverse": "\u6771\u4eac\u90fd, \u65e5\u672c",
+    "driving": {
+      "distance_m": 311940.7,
+      "duration_s": 13036.6,
+      "provider": "osrm"
+    },
+    "walking": {
+      "distance_m": 1256.5,
+      "duration_s": 1005.5,
+      "provider": "osrm"
+    },
+    "cycling": {
+      "distance_m": 1744.2,
+      "duration_s": 786.6,
+      "provider": "osrm"
+    },
+    "disconnected": {
+      "code": "NO_ROUTE",
+      "message": "No driving route found between these locations. Choose points near connected roads."
+    }
+  }
+}

@@ -10,7 +10,7 @@
 - `screenshots/`: real desktop and mobile/offline browser captures.
 - `references.md`: sources and verification record.
 
-The report identifies public deployment as pending. Before final submission, add the actual API/frontend URLs, deployed commit and cloud verification results. Supply your real student/supervisor details and any mandatory institutional certificate or declaration; none have been invented.
+The report includes the public URL, release and live test results. Add your student/supervisor details and any required college declaration before submission.
 
 ## Regenerate the PDFs
 Install the optional report dependency in your virtual environment:
@@ -21,7 +21,7 @@ Install the optional report dependency in your virtual environment:
 The script uses ReportLab and a local Unicode font if available, otherwise ReportLab's bundled Vera. Fonts can affect pagination, so inspect the regenerated PDFs. The delivered files were rendered and visually checked. Keep the cheat sheet to one page.
 
 ## Learn and rehearse
-Read the short pitch first, trace one request through the source, then work through the concept primers before memorizing answers. Use the question bank to explain assumptions, not to hide gaps. The interactive mock viva starts after the remaining deployment work: one question, your answer, a score out of ten, corrections and a model response. Difficulty increases gradually until you say stop.
+Read the short pitch first, trace one request through the source, then work through the concept primers before memorizing answers. Use the question bank to explain assumptions, not to hide gaps. The interactive mock viva starts once you have rehearsed the live demo: one question, your answer, a score out of ten, corrections and a model response. Difficulty increases gradually until you say stop.
 
 ## Three-line revision
 OpenAPI is the contract; Swagger UI is a tool that displays and executes that contract.

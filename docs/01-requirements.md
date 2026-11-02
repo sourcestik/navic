@@ -1,5 +1,7 @@
 # Phase 1 — problem and scope
 
+This phase records the original Delhi implementation. For the deployed worldwide default, provider choices, GPS/IP flow and updated verification, read the [worldwide release notes](worldwide.md).
+
 ## Problem statement
 Build Navic, an educational map navigator for a Delhi NCR pilot area. A user selects two places, chooses driving, walking or cycling, and receives a shortest-distance road route, estimated travel time and basic maneuver instructions. Expose the same functionality through a documented, publicly deployed C++ HTTP API.
 

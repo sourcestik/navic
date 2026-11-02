@@ -1,5 +1,7 @@
 # Phase 8 — repository and version control
 
+The published repository is [sourcestik/navic-MiniProject](https://github.com/sourcestik/navic-MiniProject). Use the setup steps below only for a new clone or a new project.
+
 ## What belongs in Git
 Track project code, tests, direct dependency versions/lockfile, vendor notices, compressed graph, offline geometry, metadata and documentation. Do not track secrets, raw Overpass downloads, node_modules, compiled binaries, virtual environments or transient process logs. The compressed graph is about 20 MiB and below GitHub's per-file limit; its uncompressed counterpart is ignored.
 

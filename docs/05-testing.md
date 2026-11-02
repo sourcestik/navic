@@ -3,7 +3,7 @@
 ## Test plan and recorded results
 Run the native core checks, then pytest against isolated real C++ HTTP processes, then the frontend production build and browser checks. Algorithm fixtures are small and controlled; real-data tests use the delivered OSM snapshot. Inspect artifacts/pytest-results.xml, artifacts/benchmark.json, artifacts/resource-check.json and artifacts/local-smoke-test.json.
 
-Recorded final local results: **16,529 native checks passed; 45 pytest tests passed; Vite production build passed.** Native checks include an independent Floyd–Warshall oracle, so the test suite does not merely compare two implementations that might share a bug. These counts describe assertions/test items, not coverage percentages.
+Recorded final local results: **16,529 native checks passed; 52 pytest tests and 6 browser-location unit tests passed; Vite production build passed.** Native checks include an independent Floyd–Warshall oracle, so the test suite does not merely compare two implementations that might share a bug. These counts describe assertions/test items, not coverage percentages.
 
 | Input / scenario | Expected | Actual |
 |---|---|---|
@@ -16,7 +16,8 @@ Recorded final local results: **16,529 native checks passed; 45 pytest tests pas
 | Identical source/destination | Zero road distance/time; valid two-position line | Pass |
 | Disconnected synthetic components | 404 NO_ROUTE | Pass |
 | Point beyond 800 m from usable nodes | 422 SNAP_TOO_FAR | Pass |
-| Outside coverage | 422 OUTSIDE_COVERAGE | Pass |
+| Outside the Delhi extract | Delegate to worldwide routing | Pass: Paris–Brussels, 311.9 km |
+| New York–London driving | No road connection | Public HTTP 404 NO_ROUTE |
 | Latitude 200, string/bool/null coordinates | 422 with structured error | Pass |
 | Malformed JSON | 400 INVALID_JSON | Pass |
 | Missing endpoint/object | 422 | Pass |
@@ -36,8 +37,11 @@ Recorded final local results: **16,529 native checks passed; 45 pytest tests pas
 | Offline road layer | Route remains visible over local road vectors | Browser verified |
 | 390 px viewport | Stacked layout; no horizontal overflow | Browser verified: content width=viewport width=390 px |
 | Geolocation on an actual device | Permission handling and valid source | Not exercised with personal location |
-| Render/Netlify public endpoint | HTTPS routes work from another device | Pending connected accounts and deployment |
-| Docker/Linux CI | Container build and platform tests pass | Not yet run; Docker absent locally, CI needs push |
+| Render/Netlify public endpoint | HTTPS routes work from another device | All three modes passed over public HTTPS; a physical second-device test is separate. |
+| Docker/Linux CI | Container build and platform tests pass | GitHub Actions passed; Render built and started the Docker image. |
+
+## Worldwide mobile browser check
+On the deployed site, a fresh Chrome context at 390 × 844 CSS pixels used simulated coordinates. GPS denial triggered the labeled IP origin and a pin. Retry GPS replaced both the input and marker with the simulated Paris origin; the page fit the viewport. Selecting a live Brussels autocomplete result produced a 308.3 km route with turn instructions. That result used a different destination pin from the fixed-coordinate 311.9 km API test. No personal GPS reading was collected.
 
 ## Responsive layout verification
 Using the production frontend and a live local C++ route from NSUT to Vegas Mall, the browser was resized to 320×568, 390×844, 844×390, 768×1024, 1024×768, 1440×900 and 1920×1080 CSS pixels. At every size the document fit horizontally and both endpoint markers remained inside the map. At 390×844, “View map” focused the map and exposed its full 608 px height. “Plan route” returned focus to the route planner. These checks used browser viewport emulation. The mobile capture is in [navic-phone-map.jpg](screenshots/navic-phone-map.jpg).
@@ -66,4 +70,4 @@ Restart the API before a clean uncached benchmark. Do not compare a cache hit wi
 ## Three-line revision
 Test algorithms against an independent oracle, then test the real HTTP boundary and browser flow.
 Separate search time, snapping/HTTP latency, cache hits and startup memory.
-Local checks passed; public deployment, container/CI and physical-device location checks remain explicitly identified.
+Local, Linux CI and public HTTPS checks passed. Personal-device GPS accuracy was not measured.
