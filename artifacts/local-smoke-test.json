@@ -1,0 +1,34 @@
+{
+  "base_url": "http://127.0.0.1:8080",
+  "public_https_candidate": false,
+  "health": {
+    "data_version": "2026-11-01T19:03:08Z",
+    "edges": 708631,
+    "nodes": 309697,
+    "places": 19907,
+    "service": "navic-cpp",
+    "status": "ok",
+    "uptime_s": 98.661140792,
+    "version": "1.0.0"
+  },
+  "route_checks": [
+    {
+      "mode": "driving",
+      "distance_m": 2893.4768324396837,
+      "duration_s": 419.5741124576411,
+      "request_ms": 13.739542000000007
+    },
+    {
+      "mode": "walking",
+      "distance_m": 2871.5454954215584,
+      "duration_s": 2153.6591215635976,
+      "request_ms": 15.189833
+    },
+    {
+      "mode": "cycling",
+      "distance_m": 2871.5454954215584,
+      "duration_s": 689.1709189003514,
+      "request_ms": 14.237291999999998
+    }
+  ]
+}

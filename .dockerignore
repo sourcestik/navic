@@ -1,0 +1,14 @@
+.git
+.venv
+.pnpm-store
+build
+frontend/node_modules
+frontend/dist
+data/raw
+data/graph.ndjson
+data/graph.json
+artifacts
+output
+.env
+**/__pycache__
+.pytest_cache

@@ -1,0 +1,10 @@
+{
+  "command": "/usr/bin/time -l ./build/navic-api --check-data",
+  "machine": "macOS arm64, Apple clang 21.0.0, release -O2",
+  "graph_nodes": 309697,
+  "graph_edges": 708631,
+  "wall_seconds": 1.83,
+  "maximum_resident_set_bytes": 140656640,
+  "peak_memory_footprint_bytes": 140116472,
+  "notes": "Final graph/data loading only, including connectivity index and static assets. Not a concurrent HTTP load test or a measurement of Render's Linux runtime."
+}

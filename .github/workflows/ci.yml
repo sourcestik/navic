@@ -1,0 +1,24 @@
+name: Build and test
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: python scripts/unpack_data.py
+      - run: sh scripts/build.sh
+      - run: python -m pip install -r requirements.txt
+      - run: python -m pytest -q --junitxml=artifacts/pytest-results.xml
+      - run: npm install --global pnpm@11.25.0
+      - run: pnpm install --frozen-lockfile && pnpm run build
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: artifacts/pytest-results.xml

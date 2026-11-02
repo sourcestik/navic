@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "name": "Delhi · Dwarka to Central Delhi pilot",
+  "bbox": [
+    28.5,
+    76.98,
+    28.7,
+    77.25
+  ],
+  "osm_timestamp": "2026-11-01T19:03:08Z",
+  "data_version": "2026-11-01T19:03:08Z",
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL-1.0",
+  "source_url": "https://www.openstreetmap.org/copyright",
+  "nodes": 309697,
+  "edges": 708631,
+  "places": 19907,
+  "objective": "shortest_distance",
+  "turn_restrictions": false,
+  "sha256": "880781fd9537785cbf38307b3a8face4f976fdd08beb5204070663105673b96b"
+}

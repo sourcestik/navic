@@ -1,0 +1,197 @@
+{
+  "base_url": "http://127.0.0.1:8080",
+  "client_machine": "macOS-27.0.1-arm64-arm-64bit",
+  "health": {
+    "data_version": "2026-11-01T19:03:08Z",
+    "edges": 708631,
+    "nodes": 309697,
+    "places": 19907,
+    "service": "navic-cpp",
+    "status": "ok",
+    "uptime_s": 96.578709167,
+    "version": "1.0.0"
+  },
+  "notes": "One request per case; observational measurements, not a load test. Cache hits are labeled and must not be compared as fresh searches.",
+  "results": [
+    {
+      "journey": "NSUT to Vegas Mall",
+      "mode": "driving",
+      "algorithm": "dijkstra",
+      "http_ms": 15.890625000000005,
+      "distance_m": 2893.4768324396837,
+      "duration_s": 419.5741124576411,
+      "visited_nodes": 7628,
+      "search_ms": 1.723333,
+      "cached": false,
+      "snap_gaps_m": [
+        181.7571784636302,
+        85.06083690395756
+      ]
+    },
+    {
+      "journey": "NSUT to Vegas Mall",
+      "mode": "driving",
+      "algorithm": "astar",
+      "http_ms": 14.597457999999994,
+      "distance_m": 2893.4768324396837,
+      "duration_s": 419.5741124576411,
+      "visited_nodes": 628,
+      "search_ms": 0.267125,
+      "cached": false,
+      "snap_gaps_m": [
+        181.7571784636302,
+        85.06083690395756
+      ]
+    },
+    {
+      "journey": "NSUT to Vegas Mall",
+      "mode": "walking",
+      "algorithm": "dijkstra",
+      "http_ms": 16.854000000000006,
+      "distance_m": 2871.5454954215584,
+      "duration_s": 2153.6591215635976,
+      "visited_nodes": 8644,
+      "search_ms": 1.748709,
+      "cached": false,
+      "snap_gaps_m": [
+        181.7571784636302,
+        85.06083690395756
+      ]
+    },
+    {
+      "journey": "NSUT to Vegas Mall",
+      "mode": "walking",
+      "algorithm": "astar",
+      "http_ms": 15.527542000000006,
+      "distance_m": 2871.5454954215584,
+      "duration_s": 2153.6591215635976,
+      "visited_nodes": 674,
+      "search_ms": 0.257417,
+      "cached": false,
+      "snap_gaps_m": [
+        181.7571784636302,
+        85.06083690395756
+      ]
+    },
+    {
+      "journey": "NSUT to Vegas Mall",
+      "mode": "cycling",
+      "algorithm": "dijkstra",
+      "http_ms": 15.62991700000002,
+      "distance_m": 2871.5454954215584,
+      "duration_s": 689.1709189003514,
+      "visited_nodes": 7588,
+      "search_ms": 1.493125,
+      "cached": false,
+      "snap_gaps_m": [
+        181.7571784636302,
+        85.06083690395756
+      ]
+    },
+    {
+      "journey": "NSUT to Vegas Mall",
+      "mode": "cycling",
+      "algorithm": "astar",
+      "http_ms": 14.383584000000004,
+      "distance_m": 2871.5454954215584,
+      "duration_s": 689.1709189003514,
+      "visited_nodes": 653,
+      "search_ms": 0.247459,
+      "cached": false,
+      "snap_gaps_m": [
+        181.7571784636302,
+        85.06083690395756
+      ]
+    },
+    {
+      "journey": "NSUT to India Gate",
+      "mode": "driving",
+      "algorithm": "dijkstra",
+      "http_ms": 58.87516599999998,
+      "distance_m": 21083.28488968443,
+      "duration_s": 2430.1243789333653,
+      "visited_nodes": 221961,
+      "search_ms": 43.747334,
+      "cached": false,
+      "snap_gaps_m": [
+        181.7571784636302,
+        178.48718193132123
+      ]
+    },
+    {
+      "journey": "NSUT to India Gate",
+      "mode": "driving",
+      "algorithm": "astar",
+      "http_ms": 26.57537500000001,
+      "distance_m": 21083.28488968443,
+      "duration_s": 2430.1243789333653,
+      "visited_nodes": 38832,
+      "search_ms": 11.152916,
+      "cached": false,
+      "snap_gaps_m": [
+        181.7571784636302,
+        178.48718193132123
+      ]
+    },
+    {
+      "journey": "NSUT to India Gate",
+      "mode": "walking",
+      "algorithm": "dijkstra",
+      "http_ms": 70.28529099999997,
+      "distance_m": 21439.302028084392,
+      "duration_s": 16092.426072791392,
+      "visited_nodes": 251388,
+      "search_ms": 53.7235,
+      "cached": false,
+      "snap_gaps_m": [
+        181.7571784636302,
+        22.291091258312754
+      ]
+    },
+    {
+      "journey": "NSUT to India Gate",
+      "mode": "walking",
+      "algorithm": "astar",
+      "http_ms": 34.13762500000001,
+      "distance_m": 21439.302028084392,
+      "duration_s": 16092.426072791392,
+      "visited_nodes": 50265,
+      "search_ms": 17.411042,
+      "cached": false,
+      "snap_gaps_m": [
+        181.7571784636302,
+        22.291091258312754
+      ]
+    },
+    {
+      "journey": "NSUT to India Gate",
+      "mode": "cycling",
+      "algorithm": "dijkstra",
+      "http_ms": 71.71512499999999,
+      "distance_m": 23102.60034064492,
+      "duration_s": 5544.624081748952,
+      "visited_nodes": 245711,
+      "search_ms": 55.824375,
+      "cached": false,
+      "snap_gaps_m": [
+        181.7571784636302,
+        22.291091258312754
+      ]
+    },
+    {
+      "journey": "NSUT to India Gate",
+      "mode": "cycling",
+      "algorithm": "astar",
+      "http_ms": 38.250167000000005,
+      "distance_m": 23102.60034064492,
+      "duration_s": 5544.624081748952,
+      "visited_nodes": 76648,
+      "search_ms": 22.453042,
+      "cached": false,
+      "snap_gaps_m": [
+        181.7571784636302,
+        22.291091258312754
+      ]
+    }
+  ]
+}
