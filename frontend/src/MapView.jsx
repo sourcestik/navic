@@ -9,6 +9,7 @@ export default function MapView({ coverage, source, destination, route, onPick, 
   const container = useRef(null), map = useRef(null), tile = useRef(null);
   const routeLayers = useRef(null), markers = useRef(null), boundary = useRef(null), roads = useRef(null);
   const pickRef = useRef(onPick);
+  const fittedRoute = useRef(null);
   const [mapError, setMapError] = useState('');
   useEffect(() => { pickRef.current = onPick; }, [onPick]);
   useEffect(() => {
@@ -22,7 +23,10 @@ export default function MapView({ coverage, source, destination, route, onPick, 
     L.control.scale({ position: 'bottomleft', imperial: false }).addTo(instance);
     instance.on('click', event => pickRef.current({ lat: event.latlng.lat, lon: event.latlng.lng,
       name: `${event.latlng.lat.toFixed(5)}, ${event.latlng.lng.toFixed(5)}` }));
-    const observer = new ResizeObserver(() => instance.invalidateSize());
+    const observer = new ResizeObserver(() => {
+      instance.invalidateSize({ pan: false });
+      if (fittedRoute.current) frameRoute(instance, fittedRoute.current);
+    });
     observer.observe(container.current);
     return () => { observer.disconnect(); instance.remove(); map.current = null; };
   }, []);
@@ -46,6 +50,7 @@ export default function MapView({ coverage, source, destination, route, onPick, 
   useEffect(() => {
     if (!map.current) return;
     routeLayers.current.clearLayers();
+    fittedRoute.current = null;
     if (!route) return;
     const latlngs = route.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
     L.polyline(latlngs, { color: '#ffffff', weight: 10, opacity: .95 }).addTo(routeLayers.current);
@@ -54,7 +59,12 @@ export default function MapView({ coverage, source, destination, route, onPick, 
       if (original && snapped.distance_m > 5) L.polyline([[original.lat, original.lon], [snapped.lat, snapped.lon]],
         { color: '#9b733f', weight: 2, dashArray: '4 6', interactive: false }).addTo(routeLayers.current);
     }
-    map.current.fitBounds(line.getBounds(), { padding: [70, 70], maxZoom: 16 });
+    const bounds = line.getBounds();
+    for (const place of [source, destination]) {
+      if (place) bounds.extend([place.lat, place.lon]);
+    }
+    fittedRoute.current = bounds;
+    frameRoute(map.current, bounds);
   }, [route, source, destination]);
   useEffect(() => {
     if (!map.current) return;
@@ -69,7 +79,7 @@ export default function MapView({ coverage, source, destination, route, onPick, 
     }).catch(error => { if (!controller.signal.aborted) setMapError(error.message); });
     return () => controller.abort();
   }, [offline]);
-  return <section className="map-area" aria-label="Interactive route map">
+  return <section id="route-map" tabIndex={-1} className="map-area" aria-label="Interactive route map">
     <div ref={container} className="map-canvas" />
     <div className="map-topline"><span className="map-location"><span className="live-dot"/> DELHI NCR <span className="map-separator">/</span> PILOT AREA</span>
       <button className={`map-style ${offline ? 'selected' : ''}`} onClick={() => setOffline(!offline)} aria-pressed={offline}><Icon name="layers" size={17}/>{offline ? 'Offline roads' : 'Road map'}</button>
@@ -79,4 +89,17 @@ export default function MapView({ coverage, source, destination, route, onPick, 
     <div className="map-caption"><Icon name="compass" size={15}/><span>{offline ? 'Local OSM geometry · no map-tile connection needed' : 'Dwarka → Central Delhi · routes stay inside the dotted boundary'}</span></div>
     {offline && <div className="offline-attribution">© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · ODbL</div>}
   </section>;
+}
+
+// Leave space for map controls while keeping both endpoint pins in view after rotation.
+function frameRoute(map, bounds) {
+  const { x, y } = map.getSize();
+  if (!x || !y) return;
+  const side = Math.min(70, x * 0.09);
+  map.fitBounds(bounds, {
+    paddingTopLeft: [side, Math.min(95, y * 0.24)],
+    paddingBottomRight: [side, Math.min(80, y * 0.22)],
+    maxZoom: 16,
+    animate: false
+  });
 }

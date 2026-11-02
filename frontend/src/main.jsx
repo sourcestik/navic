@@ -80,8 +80,12 @@ function App() {
       <nav aria-label="Main navigation"><span className="nav-active">Route planner</span><button onClick={() => setInfo(true)}>Behind the route <Icon name="arrow" size={15}/></button></nav>
       <span className="project-label">BUILT ON OPEN MAPS <span>↗</span></span>
     </header>
+    <nav className="panel-shortcuts" aria-label="Jump to a panel">
+      <a href="#planner"><Icon name="route" size={17}/> Plan route</a>
+      <a href="#route-map"><Icon name="pin" size={17}/> View map</a>
+    </nav>
     <main className="workspace">
-      <aside className="sidebar">
+      <aside id="planner" className="sidebar" tabIndex={-1} aria-label="Route planner">
         <div className="planner-content">
           <div className="eyebrow"><span className="short-line"/> YOUR CITY, CONNECTED</div>
           <h1>Every journey<br/> starts <em>somewhere.</em></h1>

@@ -39,6 +39,9 @@ Recorded final local results: **16,529 native checks passed; 45 pytest tests pas
 | Render/Netlify public endpoint | HTTPS routes work from another device | Pending connected accounts and deployment |
 | Docker/Linux CI | Container build and platform tests pass | Not yet run; Docker absent locally, CI needs push |
 
+## Responsive layout verification
+Using the production frontend and a live local C++ route from NSUT to Vegas Mall, the browser was resized to 320×568, 390×844, 844×390, 768×1024, 1024×768, 1440×900 and 1920×1080 CSS pixels. At every size the document fit horizontally and both endpoint markers remained inside the map. At 390×844, “View map” focused the map and exposed its full 608 px height. “Plan route” returned focus to the route planner. These checks used browser viewport emulation. The mobile capture is in [navic-phone-map.jpg](screenshots/navic-phone-map.jpg).
+
 ## Performance interpretation
 The benchmark records two real journeys, three modes and both algorithms. Read the JSON for exact current timings. Search time excludes snapping, HTTP, JSON construction and browser drawing. Whole-request time includes local network and response processing. Cached responses are labeled and excluded from fresh-search comparisons. The sample is one run per case, not a percentile-based load test.
 

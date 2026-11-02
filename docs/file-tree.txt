@@ -37,6 +37,7 @@ docs/openapi.json
 docs/references.md
 docs/report.md
 docs/screenshots/navic-offline-mobile.jpg
+docs/screenshots/navic-phone-map.jpg
 docs/screenshots/navic-route.jpg
 docs/swagger.html
 docs/viva-guide.md
