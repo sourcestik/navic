@@ -10,5 +10,3 @@ services:
         value: 0.0.0.0
       - key: RATE_LIMIT_PER_MINUTE
         value: "180"
-      - key: ALLOWED_ORIGINS
-        sync: false

@@ -35,7 +35,7 @@ def api_factory():
             sock.bind(("127.0.0.1", 0))
             port = sock.getsockname()[1]
         environment = {**os.environ, "PORT": str(port), "HOST": "127.0.0.1", "RATE_LIMIT_PER_MINUTE": str(rate),
-            "ALLOWED_ORIGINS": "http://localhost:5173"}
+            "ALLOWED_ORIGINS": "http://localhost:5173", "RENDER_EXTERNAL_URL": "https://navic.example"}
         if graph_path is not None:
             environment["GRAPH_PATH"] = str(graph_path)
         log = (ROOT / "artifacts" / f"test-server-{port}.log").open("w")

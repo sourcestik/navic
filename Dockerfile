@@ -26,4 +26,4 @@ COPY --from=web /web/dist/ /app/frontend/dist/
 ENV PORT=8080 HOST=0.0.0.0
 USER navic
 EXPOSE 8080
-CMD ["/app/navic-api"]
+ENTRYPOINT ["/app/navic-api"]

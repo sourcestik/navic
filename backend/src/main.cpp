@@ -142,6 +142,9 @@ int main(int argc, char** argv) {
         std::unordered_set<std::string> origins;
         std::istringstream origin_stream(origins_text);
         for (std::string origin; std::getline(origin_stream, origin, ',');) origins.insert(origin);
+        // Render supplies the canonical HTTPS origin after it assigns the service URL.
+        const auto public_origin = env("RENDER_EXTERNAL_URL", "");
+        if (!public_origin.empty()) origins.insert(public_origin);
         RouteCache cache;
         RateLimiter limiter(per_minute);
         httplib::Server server;

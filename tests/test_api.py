@@ -96,6 +96,8 @@ def test_bad_queries(api, query):
 
 
 def test_cors(api, journey):
+    status, _, headers = call(api, "/route", journey, headers={"Content-Type": "application/json", "Origin": "https://navic.example"})
+    assert status == 200 and headers["Access-Control-Allow-Origin"] == "https://navic.example"
     status, _, headers = call(api, "/health", headers={"Origin": "http://localhost:5173"})
     assert status == 200 and headers["Access-Control-Allow-Origin"] == "http://localhost:5173"
     status, _, headers = call(api, "/route", journey, headers={"Content-Type": "application/json", "Origin": "https://untrusted.invalid"})
